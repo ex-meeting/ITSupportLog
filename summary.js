@@ -31,6 +31,18 @@ function isoToThaiDate(isoDate) {
   return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year + 543}`;
 }
 
+function isoToThaiShortDate(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return isoDate;
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${String((year + 543) % 100).padStart(2, "0")}`;
+}
+
+function normalizeModernYear(year) {
+  if (year >= 1900 && year < 2000) return year + 57;
+  return year;
+}
+
 function thaiDateToIso(value) {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -55,8 +67,54 @@ function thaiDateToIso(value) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function dateLikeToIso(value) {
+  if (!value) return "";
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const [year, month, day] = text.split("-").map(Number);
+    return `${normalizeModernYear(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
+    const date = new Date(text);
+    if (!Number.isNaN(date.getTime())) {
+      const year = normalizeModernYear(date.getFullYear());
+      return `${year}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+  }
+  return thaiDateToIso(text);
+}
+
 function getLogIsoDate(log) {
-  return log.work_date_iso || thaiDateToIso(log.work_date) || log.work_date;
+  return dateLikeToIso(log.work_date_iso) || dateLikeToIso(log.work_date) || log.work_date;
+}
+
+function formatDisplayDate(value) {
+  const iso = dateLikeToIso(value);
+  return iso ? isoToThaiShortDate(iso) : String(value || "-");
+}
+
+function formatDisplayTime(value) {
+  if (!value) return "";
+  const text = String(value).trim();
+  const timeMatch = text.match(/^(\d{1,2}):(\d{2})/);
+  if (timeMatch) {
+    return `${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
+    const date = new Date(text);
+    if (!Number.isNaN(date.getTime())) {
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+  }
+
+  return text;
+}
+
+function formatTimeRange(log) {
+  const start = formatDisplayTime(log.start_time);
+  const end = formatDisplayTime(log.end_time);
+  return `${start}${end ? `-${end}` : ""}`;
 }
 
 function durationLabel(minutes) {
@@ -176,19 +234,25 @@ function filteredLogs() {
         .toLowerCase()
         .includes(text);
     })
-    .sort((a, b) => `${getLogIsoDate(b)} ${b.start_time}`.localeCompare(`${getLogIsoDate(a)} ${a.start_time}`));
+    .sort((a, b) =>
+      `${getLogIsoDate(b)} ${formatDisplayTime(b.start_time)}`.localeCompare(
+        `${getLogIsoDate(a)} ${formatDisplayTime(a.start_time)}`,
+      ),
+    );
 }
 
 function renderSummary() {
   const todayLogs = staffLogs().filter((log) => getLogIsoDate(log) === selectedDate);
   elements.summaryStaff.textContent = selectedStaff || "ไม่ระบุเจ้าหน้าที่";
-  elements.summaryDate.textContent = isoToThaiDate(selectedDate);
+  elements.summaryDate.textContent = formatDisplayDate(selectedDate);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
   elements.countDoing.textContent = todayLogs.filter((log) => log.status === "ระหว่างดำเนินการ").length;
   elements.countFailed.textContent = todayLogs.filter((log) => log.status === "ไม่สำเร็จ").length;
 
-  const recent = todayLogs.sort((a, b) => b.start_time.localeCompare(a.start_time)).slice(0, 8);
+  const recent = todayLogs
+    .sort((a, b) => formatDisplayTime(b.start_time).localeCompare(formatDisplayTime(a.start_time)))
+    .slice(0, 8);
   if (!recent.length) {
     elements.recentList.innerHTML = '<div class="empty-state">ยังไม่มีรายการของวันนี้</div>';
     return;
@@ -202,7 +266,7 @@ function renderSummary() {
             <strong>${escapeHtml(log.work_title)}</strong>
             <span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span>
           </div>
-          <p>${escapeHtml(log.start_time)}${log.end_time ? `-${escapeHtml(log.end_time)}` : ""} · ${durationLabel(log.duration_minutes)}</p>
+          <p>${escapeHtml(formatTimeRange(log))} · ${durationLabel(log.duration_minutes)}</p>
           <p>${escapeHtml(log.main_category)}</p>
         </article>
       `,
@@ -225,8 +289,8 @@ function renderTable() {
     .map(
       (log) => `
         <tr>
-          <td>${escapeHtml(isoToThaiDate(getLogIsoDate(log)))}</td>
-          <td>${escapeHtml(log.start_time)}${log.end_time ? `-${escapeHtml(log.end_time)}` : ""}<br><small>${durationLabel(log.duration_minutes)}</small></td>
+          <td>${escapeHtml(formatDisplayDate(getLogIsoDate(log)))}</td>
+          <td>${escapeHtml(formatTimeRange(log))}<br><small>${durationLabel(log.duration_minutes)}</small></td>
           <td><strong>${escapeHtml(log.work_title)}</strong><br><small>${escapeHtml(log.work_detail).slice(0, 120)}</small></td>
           <td>${escapeHtml(log.main_category)}<br><small>${escapeHtml(log.sub_category)}</small></td>
           <td><span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span></td>
