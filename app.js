@@ -94,6 +94,7 @@ const elements = {
   openCalendar: document.querySelector("#openCalendar"),
   thaiCalendar: document.querySelector("#thaiCalendar"),
   thaiDatePreview: document.querySelector("#thaiDatePreview"),
+  staffField: document.querySelector("#staffField"),
   staff: document.querySelector("#staff"),
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
@@ -274,11 +275,14 @@ function getEmbeddedStaff() {
 
 function applyEmbeddedStaffLock() {
   const staff = getEmbeddedStaff();
-  if (!staff) return;
+  if (!staff) {
+    elements.staffField.hidden = false;
+    elements.staff.disabled = false;
+    return;
+  }
   elements.staff.value = staff.name;
   elements.staff.disabled = true;
-  const staffLabel = elements.staff.closest("label");
-  if (staffLabel) staffLabel.hidden = true;
+  elements.staffField.hidden = true;
   elements.formMode.textContent = `แบบฟอร์มของ ${staff.name}`;
 }
 
