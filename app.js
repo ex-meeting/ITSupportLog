@@ -1,6 +1,7 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
 const SCRIPT_URL_KEY = "it-support-google-script-url";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 const staffList = [
   { name: "นายมนตรี กิ่งแก้ว", email: "montree@example.local", role: "Supervisor" },
@@ -488,13 +489,42 @@ function validateByStatus(status, endTime, resultNote) {
   return "";
 }
 
-function collectFormData() {
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error("อ่านไฟล์แนบไม่สำเร็จ"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function collectAttachmentFiles() {
+  const files = Array.from(elements.attachments.files || []);
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+  if (totalSize > MAX_ATTACHMENT_BYTES) {
+    throw new Error("ไฟล์แนบมีขนาดรวมเกิน 10 MB");
+  }
+
+  return Promise.all(
+    files.map(async (file) => ({
+      name: file.name,
+      mime_type: file.type || "application/octet-stream",
+      size: file.size,
+      data: await readFileAsBase64(file),
+    })),
+  );
+}
+
+async function collectFormData() {
   const isoDate = normalizeDateInput();
   const staff = staffList.find((item) => item.name === elements.staff.value);
   const startTime = normalizeTime(elements.startTime.value);
   const endTime = normalizeTime(elements.endTime.value);
   const durationMinutes = minutesBetween(startTime, endTime);
-  const files = Array.from(elements.attachments.files || []).map((file) => file.name);
+  const attachmentFiles = await collectAttachmentFiles();
   return {
     log_id: editId || makeId(isoDate),
     work_date: isoToThaiShortDate(isoDate),
@@ -510,7 +540,9 @@ function collectFormData() {
     work_detail: elements.workDetail.value.trim(),
     status: elements.status.value,
     result_note: elements.resultNote.value.trim(),
-    attachment_names: files,
+    attachment_names: attachmentFiles.map((file) => file.name),
+    attachment_files: attachmentFiles,
+    attachment_urls: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -573,20 +605,32 @@ async function submitForm(event) {
     showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17:30");
     return;
   }
-  const data = collectFormData();
+  let data;
+  try {
+    data = await collectFormData();
+  } catch (error) {
+    showToast(error.message);
+    return;
+  }
   const error = validateByStatus(data.status, data.end_time, data.result_note);
   if (error) {
     showToast(error);
     return;
   }
 
+  const localData = {
+    ...data,
+    attachment_files: [],
+  };
+
   const logs = loadLogs();
-  const existingIndex = logs.findIndex((log) => log.log_id === data.log_id);
+  const existingIndex = logs.findIndex((log) => log.log_id === localData.log_id);
   if (existingIndex >= 0) {
     data.created_at = logs[existingIndex].created_at;
-    logs[existingIndex] = data;
+    localData.created_at = logs[existingIndex].created_at;
+    logs[existingIndex] = localData;
   } else {
-    logs.push(data);
+    logs.push(localData);
   }
   saveLogs(logs);
   const sheetResult = await sendToGoogleSheet(data);

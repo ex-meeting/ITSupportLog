@@ -635,6 +635,21 @@ tr:last-child td {
   text-align: center;
 }
 
+.attachment-list {
+  display: grid;
+  gap: 5px;
+}
+
+.attachment-list a {
+  color: var(--accent-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.attachment-list a:hover {
+  text-decoration: underline;
+}
+
 .toast {
   position: fixed;
   right: 22px;

@@ -101,22 +101,58 @@ function normalizeSheetLog(log) {
           .split(";")
           .map((name) => name.trim())
           .filter(Boolean),
+    attachment_urls: Array.isArray(log.attachment_urls)
+      ? log.attachment_urls
+      : String(log.attachment_urls || "")
+          .split(";")
+          .map((url) => url.trim())
+          .filter(Boolean),
   };
 }
 
 async function fetchSheetLogs() {
   if (!GOOGLE_SCRIPT_URL) return null;
-  const url = new URL(GOOGLE_SCRIPT_URL);
-  url.searchParams.set("action", "list");
-  if (selectedStaff) url.searchParams.set("staff", selectedStaff);
-
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    cache: "no-store",
+  const data = await jsonpRequest(GOOGLE_SCRIPT_URL, {
+    action: "list",
+    staff: selectedStaff,
   });
-  const data = await response.json();
   if (!data.ok || !Array.isArray(data.logs)) throw new Error(data.error || "Cannot load logs");
   return data.logs.map(normalizeSheetLog);
+}
+
+function jsonpRequest(baseUrl, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `itSupportLogCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const url = new URL(baseUrl);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) url.searchParams.set(key, value);
+    });
+    url.searchParams.set("callback", callbackName);
+
+    const script = document.createElement("script");
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ"));
+    }, 15000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ"));
+    };
+    script.src = url.toString();
+    document.body.append(script);
+  });
 }
 
 function allLogs() {
@@ -135,7 +171,7 @@ function filteredLogs() {
     .filter((log) => !status || log.status === status)
     .filter((log) => {
       if (!text) return true;
-      return [log.work_title, log.work_detail, log.main_category, log.sub_category, log.result_note]
+      return [log.work_title, log.work_detail, log.main_category, log.sub_category, log.result_note, log.attachment_names]
         .join(" ")
         .toLowerCase()
         .includes(text);
@@ -181,7 +217,7 @@ function renderTable() {
     : "ไม่ได้ระบุเจ้าหน้าที่";
 
   if (!logs.length) {
-    elements.logRows.innerHTML = '<tr><td colspan="6"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
+    elements.logRows.innerHTML = '<tr><td colspan="7"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
     return;
   }
 
@@ -195,10 +231,30 @@ function renderTable() {
           <td>${escapeHtml(log.main_category)}<br><small>${escapeHtml(log.sub_category)}</small></td>
           <td><span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span></td>
           <td>${escapeHtml(log.result_note || "-")}</td>
+          <td>${renderAttachments(log)}</td>
         </tr>
       `,
     )
     .join("");
+}
+
+function renderAttachments(log) {
+  const names = Array.isArray(log.attachment_names) ? log.attachment_names : [];
+  const urls = Array.isArray(log.attachment_urls) ? log.attachment_urls : [];
+  if (!names.length && !urls.length) return "-";
+
+  const total = Math.max(names.length, urls.length);
+  const links = [];
+  for (let index = 0; index < total; index += 1) {
+    const name = names[index] || `ไฟล์แนบ ${index + 1}`;
+    const url = urls[index] || "";
+    links.push(
+      url
+        ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>`
+        : escapeHtml(name),
+    );
+  }
+  return `<div class="attachment-list">${links.join("")}</div>`;
 }
 
 function renderAll() {
