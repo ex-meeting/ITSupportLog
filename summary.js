@@ -1,4 +1,5 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
+const SUMMARY_AUTH_KEY = "it-support-summary-auth";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 
 const elements = {
@@ -13,12 +14,29 @@ const elements = {
   searchText: document.querySelector("#searchText"),
   filterStatus: document.querySelector("#filterStatus"),
   tableSubtitle: document.querySelector("#tableSubtitle"),
+  backToForm: document.querySelector("#backToForm"),
 };
 
 const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
 const selectedDate = params.get("date") || today();
+const selectedToken = params.get("token") || "";
+const summaryAuth = loadSummaryAuth();
 let activeLogs = null;
+
+const staffRouteMap = {
+  "นายมนตรี กิ่งแก้ว": "montree",
+  "จสอ.ธนบดี ข่ายม่าน": "tanabodee",
+  "นายสมพงษ์ แสนชา": "somphong",
+};
+
+function loadSummaryAuth() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SUMMARY_AUTH_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -173,6 +191,7 @@ async function fetchSheetLogs() {
   const data = await jsonpRequest(GOOGLE_SCRIPT_URL, {
     action: "list",
     staff: selectedStaff,
+    token: selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : ""),
   });
   if (!data.ok || !Array.isArray(data.logs)) throw new Error(data.error || "Cannot load logs");
   return data.logs.map(normalizeSheetLog);
@@ -214,7 +233,7 @@ function jsonpRequest(baseUrl, params = {}) {
 }
 
 function allLogs() {
-  return activeLogs || loadLogs();
+  return activeLogs || [];
 }
 
 function staffLogs() {
@@ -327,14 +346,34 @@ function renderAll() {
   renderTable();
 }
 
+function updateBackLink() {
+  const staffKey = staffRouteMap[selectedStaff] || selectedStaff;
+  const token = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
+  if (selectedStaff && token) {
+    elements.backToForm.href = `./index.html?staff=${encodeURIComponent(staffKey)}&token=${encodeURIComponent(token)}`;
+  }
+}
+
 elements.searchText.addEventListener("input", renderTable);
 elements.filterStatus.addEventListener("change", renderTable);
 
 async function init() {
+  updateBackLink();
+  const accessToken = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
+  if (!selectedStaff || !accessToken) {
+    activeLogs = [];
+    renderAll();
+    elements.recentList.innerHTML = '<div class="empty-state">กรุณาเปิดหน้าสรุปจากลิงก์เฉพาะเจ้าหน้าที่</div>';
+    return;
+  }
   try {
     activeLogs = await fetchSheetLogs();
-  } catch {
-    activeLogs = loadLogs();
+  } catch (error) {
+    activeLogs = [];
+    renderAll();
+    elements.recentList.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div>`;
+    elements.logRows.innerHTML = `<tr><td colspan="7"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
+    return;
   }
   renderAll();
 }

@@ -1,5 +1,6 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
 const SCRIPT_URL_KEY = "it-support-google-script-url";
+const SUMMARY_AUTH_KEY = "it-support-summary-auth";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
@@ -8,6 +9,17 @@ const staffList = [
   { name: "จสอ.ธนบดี ข่ายม่าน", email: "tanabodee@example.local", role: "Staff" },
   { name: "นายสมพงษ์ แสนชา", email: "somphong@example.local", role: "Staff" },
 ];
+
+const staffRouteMap = {
+  montree: "นายมนตรี กิ่งแก้ว",
+  tanabodee: "จสอ.ธนบดี ข่ายม่าน",
+  somphong: "นายสมพงษ์ แสนชา",
+};
+
+const pageParams = new URLSearchParams(window.location.search);
+const embeddedStaffParam = pageParams.get("staff") || "";
+const embeddedStaffName = staffRouteMap[embeddedStaffParam] || embeddedStaffParam;
+const embeddedAccessToken = pageParams.get("token") || "";
 
 const categoryMap = {
   "งานสนับสนุนห้องเรียนและห้องปฏิบัติการ": [
@@ -255,6 +267,21 @@ function getSelectedStaffName() {
   return elements.staff.value || "";
 }
 
+function getEmbeddedStaff() {
+  if (!embeddedStaffName) return null;
+  return staffList.find((staff) => staff.name === embeddedStaffName) || null;
+}
+
+function applyEmbeddedStaffLock() {
+  const staff = getEmbeddedStaff();
+  if (!staff) return;
+  elements.staff.value = staff.name;
+  elements.staff.disabled = true;
+  const staffLabel = elements.staff.closest("label");
+  if (staffLabel) staffLabel.hidden = true;
+  elements.formMode.textContent = `แบบฟอร์มของ ${staff.name}`;
+}
+
 function isSelectedStaffLog(log) {
   const selectedStaff = getSelectedStaffName();
   return !selectedStaff || log.staff_name === selectedStaff;
@@ -295,6 +322,55 @@ function saveLogs(logs) {
 
 function getScriptUrl() {
   return GOOGLE_SCRIPT_URL || localStorage.getItem(SCRIPT_URL_KEY) || "";
+}
+
+function getAccessToken() {
+  return embeddedAccessToken;
+}
+
+function jsonpRequest(baseUrl, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `itSupportLogCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const url = new URL(baseUrl);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) url.searchParams.set(key, value);
+    });
+    url.searchParams.set("callback", callbackName);
+
+    const script = document.createElement("script");
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("ตรวจสอบรหัสไม่สำเร็จ"));
+    }, 15000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("ตรวจสอบรหัสไม่สำเร็จ"));
+    };
+    script.src = url.toString();
+    document.body.append(script);
+  });
+}
+
+async function verifyStaffAccess(staffName, accessToken) {
+  const url = getScriptUrl();
+  if (!url) return { ok: false, error: "ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js" };
+  return jsonpRequest(url, {
+    action: "verify",
+    staff: staffName,
+    token: accessToken,
+  });
 }
 
 function makeId(date) {
@@ -454,14 +530,37 @@ function renderAll() {
   return null;
 }
 
-function openSummaryPage() {
+async function openSummaryPage() {
   const staffName = getSelectedStaffName();
   if (!staffName) {
     showToast("กรุณาเลือกชื่อเจ้าหน้าที่ก่อนเปิดหน้าสรุป");
     return;
   }
+  const accessToken = getAccessToken();
+  if (!accessToken) {
+    showToast("กรุณาเปิดจากลิงก์เฉพาะเจ้าหน้าที่ที่มี token");
+    return;
+  }
+  try {
+    const result = await verifyStaffAccess(staffName, accessToken);
+    if (!result.ok) {
+      showToast(result.error || "ไม่มีสิทธิ์เปิดหน้าสรุปของเจ้าหน้าที่นี้");
+      return;
+    }
+  } catch (error) {
+    showToast(error.message);
+    return;
+  }
   const date = thaiDateToIso(elements.workDate.value) || today();
-  const url = `summary.html?staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}`;
+  sessionStorage.setItem(
+    SUMMARY_AUTH_KEY,
+    JSON.stringify({
+      staff: staffName,
+      token: accessToken,
+      date,
+    }),
+  );
+  const url = `summary.html?staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(accessToken)}`;
   window.location.href = url;
 }
 
@@ -477,6 +576,7 @@ function resetForm(keepDate = true) {
   elements.detailCount.textContent = "0";
   editId = null;
   elements.formMode.textContent = "รายการใหม่";
+  applyEmbeddedStaffLock();
 }
 
 function validateByStatus(status, endTime, resultNote) {
@@ -531,6 +631,7 @@ async function collectFormData() {
     work_date_iso: isoDate,
     staff_name: staff?.name || elements.staff.value,
     staff_email: staff?.email || "",
+    access_token: getAccessToken(),
     start_time: startTime,
     end_time: endTime,
     duration_minutes: durationMinutes,
@@ -605,6 +706,26 @@ async function submitForm(event) {
     showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17:30");
     return;
   }
+  const staffName = getSelectedStaffName();
+  const accessToken = getAccessToken();
+  if (!staffName) {
+    showToast("กรุณาเลือกชื่อเจ้าหน้าที่");
+    return;
+  }
+  if (!accessToken) {
+    showToast("กรุณาเปิดจากลิงก์เฉพาะเจ้าหน้าที่ที่มี token");
+    return;
+  }
+  try {
+    const result = await verifyStaffAccess(staffName, accessToken);
+    if (!result.ok) {
+      showToast(result.error || "ไม่มีสิทธิ์บันทึกในชื่อเจ้าหน้าที่นี้");
+      return;
+    }
+  } catch (error) {
+    showToast(error.message);
+    return;
+  }
   let data;
   try {
     data = await collectFormData();
@@ -621,6 +742,7 @@ async function submitForm(event) {
   const localData = {
     ...data,
     attachment_files: [],
+    access_token: "",
   };
 
   const logs = loadLogs();
@@ -702,6 +824,7 @@ function bindEvents() {
 function init() {
   renderOptions(elements.staff, staffList.map((staff) => staff.name), "เลือกเจ้าหน้าที่");
   renderOptions(elements.mainCategory, Object.keys(categoryMap), "เลือกหมวดงานหลัก");
+  applyEmbeddedStaffLock();
   elements.workDate.value = isoToThaiShortDate(today());
   elements.startTime.value = nowTime();
   updateThaiDatePreview();
