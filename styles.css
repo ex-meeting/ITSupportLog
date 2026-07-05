@@ -170,21 +170,6 @@ h2 {
   letter-spacing: 0;
 }
 
-.topbar-actions {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.script-url-field {
-  width: min(420px, 34vw);
-  margin-bottom: 0;
-}
-
-.script-url-field input {
-  min-height: 40px;
-}
-
 .layout-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
@@ -276,6 +261,114 @@ select:focus,
 textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(22, 117, 111, 0.14);
+}
+
+.date-input-wrap {
+  position: relative;
+  display: flex;
+}
+
+.date-input-wrap input {
+  padding-right: 48px;
+}
+
+.date-picker-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+.date-picker-button:hover {
+  background: #d3ebe7;
+}
+
+.thai-calendar {
+  position: absolute;
+  z-index: 20;
+  width: min(330px, calc(100vw - 48px));
+  margin-top: 72px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.calendar-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.calendar-nav {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday,
+.calendar-day {
+  display: grid;
+  min-height: 34px;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.calendar-weekday {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.calendar-day {
+  border: 1px solid transparent;
+  background: #fff;
+  color: var(--text);
+}
+
+.calendar-day:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.calendar-day.today {
+  border-color: #9ed7d0;
+}
+
+.calendar-day.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.calendar-day.muted {
+  color: #a0aaae;
 }
 
 input[readonly] {
@@ -600,7 +693,4 @@ tr:last-child td {
     width: 100%;
   }
 
-  .script-url-field {
-    width: 100%;
-  }
 }

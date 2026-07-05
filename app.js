@@ -1,5 +1,6 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
 const SCRIPT_URL_KEY = "it-support-google-script-url";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 
 const staffList = [
   { name: "นายมนตรี กิ่งแก้ว", email: "montree@example.local", role: "Supervisor" },
@@ -77,6 +78,9 @@ const elements = {
   form: document.querySelector("#daily-form"),
   formMode: document.querySelector("#formMode"),
   workDate: document.querySelector("#workDate"),
+  openCalendar: document.querySelector("#openCalendar"),
+  thaiCalendar: document.querySelector("#thaiCalendar"),
+  thaiDatePreview: document.querySelector("#thaiDatePreview"),
   staff: document.querySelector("#staff"),
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
@@ -90,8 +94,6 @@ const elements = {
   resultNote: document.querySelector("#resultNote"),
   attachments: document.querySelector("#attachments"),
   resetForm: document.querySelector("#resetForm"),
-  scriptUrl: document.querySelector("#scriptUrl"),
-  saveScriptUrl: document.querySelector("#saveScriptUrl"),
   clearToday: document.querySelector("#clearToday"),
   summaryDate: document.querySelector("#summaryDate"),
   countAll: document.querySelector("#countAll"),
@@ -106,14 +108,177 @@ const elements = {
 };
 
 let editId = null;
+let calendarCursor = null;
+
+const thaiMonthNames = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
+];
+
+const thaiWeekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function isoToThaiDate(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return isoDate;
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year + 543}`;
+}
+
+function isoToThaiShortDate(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return isoDate;
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${String((year + 543) % 100).padStart(2, "0")}`;
+}
+
+function thaiDateToIso(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+
+  const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
+  if (!match) return "";
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  let year = Number(match[3]);
+  if (year < 100) year += 2500;
+  if (year > 2400) year -= 543;
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const valid =
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+
+  if (!valid) return "";
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function normalizeDateInput() {
+  const iso = thaiDateToIso(elements.workDate.value);
+  if (!iso) return "";
+  elements.workDate.value = isoToThaiShortDate(iso);
+  updateThaiDatePreview();
+  return iso;
+}
+
+function updateThaiDatePreview() {
+  const iso = thaiDateToIso(elements.workDate.value);
+  elements.thaiDatePreview.textContent = iso ? `วันที่ไทย: ${isoToThaiDate(iso)}` : "กรุณาเลือกวันที่จากปฏิทิน";
+}
+
+function dateFromIso(isoDate) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function isoFromDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function openCalendar() {
+  const iso = thaiDateToIso(elements.workDate.value) || today();
+  calendarCursor = dateFromIso(iso);
+  renderCalendar();
+  elements.thaiCalendar.hidden = false;
+}
+
+function closeCalendar() {
+  elements.thaiCalendar.hidden = true;
+}
+
+function changeCalendarMonth(delta) {
+  calendarCursor = calendarCursor || dateFromIso(today());
+  calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+function selectCalendarDate(isoDate) {
+  elements.workDate.value = isoToThaiShortDate(isoDate);
+  calendarCursor = dateFromIso(isoDate);
+  updateThaiDatePreview();
+  renderSummary();
+  closeCalendar();
+}
+
+function renderCalendar() {
+  const cursor = calendarCursor || dateFromIso(today());
+  const selectedIso = thaiDateToIso(elements.workDate.value);
+  const todayIso = today();
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const startDate = new Date(year, month, 1 - startOffset);
+  const title = `${thaiMonthNames[month]} ${year + 543}`;
+
+  const dayButtons = [];
+  for (let i = 0; i < 42; i += 1) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    const iso = isoFromDate(date);
+    const classes = [
+      "calendar-day",
+      date.getMonth() !== month ? "muted" : "",
+      iso === todayIso ? "today" : "",
+      iso === selectedIso ? "selected" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    dayButtons.push(`<button class="${classes}" type="button" data-date="${iso}">${date.getDate()}</button>`);
+  }
+
+  elements.thaiCalendar.innerHTML = `
+    <div class="calendar-head">
+      <button class="calendar-nav" type="button" data-calendar-nav="-1" aria-label="เดือนก่อนหน้า">‹</button>
+      <div class="calendar-title">${title}</div>
+      <button class="calendar-nav" type="button" data-calendar-nav="1" aria-label="เดือนถัดไป">›</button>
+    </div>
+    <div class="calendar-grid">
+      ${thaiWeekdays.map((day) => `<div class="calendar-weekday">${day}</div>`).join("")}
+      ${dayButtons.join("")}
+    </div>
+  `;
+}
+
+function getLogIsoDate(log) {
+  return log.work_date_iso || thaiDateToIso(log.work_date) || log.work_date;
+}
+
 function nowTime() {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function normalizeTime(value) {
+  if (!value) return "";
+  const match = String(value).match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return "";
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function formatTimeInput(input) {
+  const normalized = normalizeTime(input.value);
+  if (normalized) input.value = normalized;
+  updateDuration();
 }
 
 function loadLogs() {
@@ -129,27 +294,13 @@ function saveLogs(logs) {
 }
 
 function getScriptUrl() {
-  return localStorage.getItem(SCRIPT_URL_KEY) || "";
-}
-
-function saveScriptUrl() {
-  const url = elements.scriptUrl.value.trim();
-  if (!url) {
-    localStorage.removeItem(SCRIPT_URL_KEY);
-    showToast("ลบ Apps Script URL แล้ว");
-    return;
-  }
-  if (!url.startsWith("https://script.google.com/")) {
-    showToast("URL ควรเป็น Web app URL จาก script.google.com");
-    return;
-  }
-  localStorage.setItem(SCRIPT_URL_KEY, url);
-  showToast("บันทึก Apps Script URL แล้ว");
+  return GOOGLE_SCRIPT_URL || localStorage.getItem(SCRIPT_URL_KEY) || "";
 }
 
 function makeId(date) {
-  const compactDate = date.replaceAll("-", "");
-  const serial = String(loadLogs().filter((log) => log.work_date === date).length + 1).padStart(4, "0");
+  const isoDate = thaiDateToIso(date) || date;
+  const compactDate = isoDate.replaceAll("-", "");
+  const serial = String(loadLogs().filter((log) => getLogIsoDate(log) === isoDate).length + 1).padStart(4, "0");
   return `LOG-${compactDate}-${serial}`;
 }
 
@@ -189,7 +340,7 @@ function durationLabel(minutes) {
 }
 
 function updateDuration() {
-  const minutes = minutesBetween(elements.startTime.value, elements.endTime.value);
+  const minutes = minutesBetween(normalizeTime(elements.startTime.value), normalizeTime(elements.endTime.value));
   elements.duration.value = durationLabel(minutes);
 }
 
@@ -229,13 +380,13 @@ function getFilteredLogs() {
         .toLowerCase()
         .includes(text);
     })
-    .sort((a, b) => `${b.work_date} ${b.start_time}`.localeCompare(`${a.work_date} ${a.start_time}`));
+    .sort((a, b) => `${getLogIsoDate(b)} ${b.start_time}`.localeCompare(`${getLogIsoDate(a)} ${a.start_time}`));
 }
 
 function renderSummary() {
-  const date = elements.workDate.value || today();
-  const todayLogs = loadLogs().filter((log) => log.work_date === date);
-  elements.summaryDate.textContent = date;
+  const date = thaiDateToIso(elements.workDate.value) || today();
+  const todayLogs = loadLogs().filter((log) => getLogIsoDate(log) === date);
+  elements.summaryDate.textContent = isoToThaiDate(date);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
   elements.countDoing.textContent = todayLogs.filter((log) => log.status === "ระหว่างดำเนินการ").length;
@@ -277,7 +428,7 @@ function renderTable() {
     .map(
       (log) => `
         <tr>
-          <td>${escapeHtml(log.work_date)}</td>
+          <td>${escapeHtml(isoToThaiDate(getLogIsoDate(log)))}</td>
           <td>${escapeHtml(log.start_time)}${log.end_time ? `-${escapeHtml(log.end_time)}` : ""}<br><small>${durationLabel(log.duration_minutes)}</small></td>
           <td>${escapeHtml(log.staff_name)}<br><small>${escapeHtml(log.staff_email)}</small></td>
           <td><strong>${escapeHtml(log.work_title)}</strong><br><small>${escapeHtml(log.work_detail).slice(0, 90)}</small></td>
@@ -301,10 +452,11 @@ function renderAll() {
 }
 
 function resetForm(keepDate = true) {
-  const dateValue = keepDate ? elements.workDate.value || today() : today();
+  const dateValue = keepDate ? thaiDateToIso(elements.workDate.value) || today() : today();
   elements.form.reset();
-  elements.workDate.value = dateValue;
+  elements.workDate.value = isoToThaiShortDate(dateValue);
   elements.startTime.value = nowTime();
+  updateThaiDatePreview();
   elements.mainCategory.selectedIndex = 0;
   updateSubCategories();
   elements.duration.value = "-";
@@ -324,16 +476,20 @@ function validateByStatus(status, endTime, resultNote) {
 }
 
 function collectFormData() {
+  const isoDate = normalizeDateInput();
   const staff = staffList.find((item) => item.name === elements.staff.value);
-  const durationMinutes = minutesBetween(elements.startTime.value, elements.endTime.value);
+  const startTime = normalizeTime(elements.startTime.value);
+  const endTime = normalizeTime(elements.endTime.value);
+  const durationMinutes = minutesBetween(startTime, endTime);
   const files = Array.from(elements.attachments.files || []).map((file) => file.name);
   return {
-    log_id: editId || makeId(elements.workDate.value),
-    work_date: elements.workDate.value,
+    log_id: editId || makeId(isoDate),
+    work_date: isoToThaiShortDate(isoDate),
+    work_date_iso: isoDate,
     staff_name: staff?.name || elements.staff.value,
     staff_email: staff?.email || "",
-    start_time: elements.startTime.value,
-    end_time: elements.endTime.value,
+    start_time: startTime,
+    end_time: endTime,
     duration_minutes: durationMinutes,
     main_category: elements.mainCategory.value,
     sub_category: elements.subCategory.value,
@@ -350,7 +506,7 @@ function collectFormData() {
 async function sendToGoogleSheet(data) {
   const url = getScriptUrl();
   if (!url) {
-    return { ok: false, skipped: true, message: "ยังไม่ได้ตั้งค่า Apps Script URL" };
+    return { ok: false, skipped: true, message: "ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js" };
   }
 
   try {
@@ -370,10 +526,10 @@ async function sendToGoogleSheet(data) {
 
 function fillForm(log) {
   editId = log.log_id;
-  elements.workDate.value = log.work_date;
+  elements.workDate.value = isoToThaiShortDate(getLogIsoDate(log));
   elements.staff.value = log.staff_name;
-  elements.startTime.value = log.start_time;
-  elements.endTime.value = log.end_time || "";
+  elements.startTime.value = normalizeTime(log.start_time);
+  elements.endTime.value = normalizeTime(log.end_time) || "";
   elements.mainCategory.value = log.main_category;
   updateSubCategories();
   elements.subCategory.value = log.sub_category;
@@ -382,6 +538,7 @@ function fillForm(log) {
   elements.workDetail.value = log.work_detail;
   elements.resultNote.value = log.result_note || "";
   elements.detailCount.textContent = String(elements.workDetail.value.length);
+  updateThaiDatePreview();
   updateDuration();
   elements.formMode.textContent = `แก้ไข ${log.log_id}`;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -389,6 +546,20 @@ function fillForm(log) {
 
 async function submitForm(event) {
   event.preventDefault();
+  if (!thaiDateToIso(elements.workDate.value)) {
+    showToast("กรุณากรอกวันที่รูปแบบ วว/ดด/ปป หรือเลือกจากปฏิทิน");
+    return;
+  }
+  formatTimeInput(elements.startTime);
+  formatTimeInput(elements.endTime);
+  if (!normalizeTime(elements.startTime.value)) {
+    showToast("กรุณากรอกเวลาเริ่มเป็นรูปแบบ 24 ชั่วโมง เช่น 09:00");
+    return;
+  }
+  if (elements.endTime.value && !normalizeTime(elements.endTime.value)) {
+    showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17:30");
+    return;
+  }
   const data = collectFormData();
   const error = validateByStatus(data.status, data.end_time, data.result_note);
   if (error) {
@@ -411,7 +582,7 @@ async function submitForm(event) {
   if (sheetResult.ok) {
     showToast(existingIndex >= 0 ? "แก้ไขรายการ local และส่งเข้า Google Sheet แล้ว" : "บันทึกและส่งเข้า Google Sheet แล้ว");
   } else if (sheetResult.skipped) {
-    showToast("บันทึก local แล้ว แต่ยังไม่ได้ตั้งค่า Apps Script URL");
+    showToast("บันทึก local แล้ว แต่ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js");
   } else {
     showToast(`บันทึก local แล้ว แต่ส่งเข้า Sheet ไม่สำเร็จ: ${sheetResult.message}`);
   }
@@ -428,10 +599,12 @@ function deleteLog(id) {
 function seedIfEmpty() {
   if (loadLogs().length) return;
   const date = today();
+  const thaiDate = isoToThaiShortDate(date);
   saveLogs([
     {
       log_id: makeId(date),
-      work_date: date,
+      work_date: thaiDate,
+      work_date_iso: date,
       staff_name: staffList[0].name,
       staff_email: staffList[0].email,
       start_time: "09:00",
@@ -449,7 +622,8 @@ function seedIfEmpty() {
     },
     {
       log_id: `LOG-${date.replaceAll("-", "")}-0002`,
-      work_date: date,
+      work_date: thaiDate,
+      work_date_iso: date,
       staff_name: staffList[1].name,
       staff_email: staffList[1].email,
       start_time: "10:15",
@@ -471,7 +645,37 @@ function seedIfEmpty() {
 function bindEvents() {
   elements.startTime.addEventListener("input", updateDuration);
   elements.endTime.addEventListener("input", updateDuration);
-  elements.workDate.addEventListener("change", renderSummary);
+  elements.startTime.addEventListener("blur", () => formatTimeInput(elements.startTime));
+  elements.endTime.addEventListener("blur", () => formatTimeInput(elements.endTime));
+  elements.workDate.addEventListener("change", () => {
+    normalizeDateInput();
+    renderSummary();
+  });
+  elements.workDate.addEventListener("blur", () => {
+    normalizeDateInput();
+    renderSummary();
+  });
+  elements.openCalendar.addEventListener("click", openCalendar);
+  elements.thaiCalendar.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-calendar-nav]");
+    if (nav) {
+      changeCalendarMonth(Number(nav.dataset.calendarNav));
+      return;
+    }
+    const day = event.target.closest("[data-date]");
+    if (day) selectCalendarDate(day.dataset.date);
+  });
+  document.addEventListener("click", (event) => {
+    if (
+      elements.thaiCalendar.hidden ||
+      elements.thaiCalendar.contains(event.target) ||
+      elements.openCalendar.contains(event.target) ||
+      elements.workDate.contains(event.target)
+    ) {
+      return;
+    }
+    closeCalendar();
+  });
   elements.mainCategory.addEventListener("change", updateSubCategories);
   elements.workDetail.addEventListener("input", () => {
     elements.detailCount.textContent = String(elements.workDetail.value.length);
@@ -480,10 +684,9 @@ function bindEvents() {
   elements.resetForm.addEventListener("click", () => resetForm());
   elements.searchText.addEventListener("input", renderTable);
   elements.filterStatus.addEventListener("change", renderTable);
-  elements.saveScriptUrl.addEventListener("click", saveScriptUrl);
   elements.clearToday.addEventListener("click", () => {
-    const date = elements.workDate.value || today();
-    saveLogs(loadLogs().filter((log) => log.work_date !== date));
+    const date = thaiDateToIso(elements.workDate.value) || today();
+    saveLogs(loadLogs().filter((log) => getLogIsoDate(log) !== date));
     renderAll();
     showToast("ล้างรายการของวันที่เลือกแล้ว");
   });
@@ -504,9 +707,9 @@ function bindEvents() {
 function init() {
   renderOptions(elements.staff, staffList.map((staff) => staff.name), "เลือกเจ้าหน้าที่");
   renderOptions(elements.mainCategory, Object.keys(categoryMap), "เลือกหมวดงานหลัก");
-  elements.scriptUrl.value = getScriptUrl();
-  elements.workDate.value = today();
+  elements.workDate.value = isoToThaiShortDate(today());
   elements.startTime.value = nowTime();
+  updateThaiDatePreview();
   updateSubCategories();
   bindEvents();
   seedIfEmpty();
