@@ -247,6 +247,7 @@ h2 {
 
 .field-grid .full-field {
   grid-column: 1 / -1;
+  position: relative;
 }
 
 label {
@@ -313,8 +314,10 @@ textarea:focus {
 .thai-calendar {
   position: absolute;
   z-index: 20;
+  top: 72px;
+  left: 0;
   width: min(330px, calc(100vw - 48px));
-  margin-top: 72px;
+  margin-top: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
