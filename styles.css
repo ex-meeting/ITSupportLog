@@ -57,26 +57,13 @@ svg {
 }
 
 .app-shell {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
-}
-
-.sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  padding: 24px 18px;
-  background: #102326;
-  color: #e9f0ef;
 }
 
 .brand {
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 4px 6px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .brand-mark {
@@ -97,14 +84,15 @@ svg {
 
 .brand span {
   margin-top: 2px;
-  color: #aac0bf;
+  color: var(--muted);
   font-size: 12px;
 }
 
 .nav-list {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 24px;
+  margin-top: 14px;
 }
 
 .nav-item {
@@ -114,14 +102,19 @@ svg {
   min-height: 42px;
   padding: 0 12px;
   border-radius: 8px;
-  color: #c8d7d6;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #314044;
   text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .nav-item:hover,
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border-color: #bfe0dc;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
 }
 
 .nav-icon {
@@ -136,11 +129,21 @@ svg {
 }
 
 .topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+  display: grid;
+  gap: 16px;
   margin-bottom: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+
+.topbar-head {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  justify-content: space-between;
 }
 
 .section-label {
@@ -640,19 +643,6 @@ tr:last-child td {
 }
 
 @media (max-width: 1080px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-    height: auto;
-  }
-
-  .nav-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .layout-grid {
     grid-template-columns: 1fr;
   }
@@ -663,14 +653,22 @@ tr:last-child td {
     padding: 18px;
   }
 
-  .topbar,
   .panel-heading {
     display: grid;
   }
 
   .field-grid.two,
-  .summary-grid,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-head {
+    display: grid;
+    gap: 14px;
+  }
+
   .nav-list {
+    display: grid;
     grid-template-columns: 1fr;
   }
 
