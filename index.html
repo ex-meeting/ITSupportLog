@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>บันทึกการทำงานรายวัน | IT Support</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="เมนูหลัก">
+        <div class="brand">
+          <div class="brand-mark">IT</div>
+          <div>
+            <strong>IT Support Log</strong>
+            <span>ระบบบันทึกงานรายวัน</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="#daily-form">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+            </span>
+            บันทึกงาน
+          </a>
+          <a class="nav-item" href="#log-table">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18" /></svg>
+            </span>
+            รายการทั้งหมด
+          </a>
+          <a class="nav-item" href="#summary">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 19V5M9 19v-8M14 19v-5M19 19V8" /></svg>
+            </span>
+            สรุปวันนี้
+          </a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+            <h1>บันทึกการทำงานรายวัน</h1>
+          </div>
+          <div class="topbar-actions">
+            <label class="script-url-field">
+              Apps Script URL
+              <input id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/..." />
+            </label>
+            <button class="ghost-button" id="saveScriptUrl" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>
+              บันทึก URL
+            </button>
+          </div>
+        </header>
+
+        <section class="layout-grid">
+          <form class="panel form-panel" id="daily-form" autocomplete="off">
+            <div class="panel-heading">
+              <div>
+                <h2>เพิ่มรายการงาน</h2>
+                <p>กรอกข้อมูลเฉพาะรายการงาน ไม่ใช่ Ticket</p>
+              </div>
+              <span class="form-mode" id="formMode">รายการใหม่</span>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                วันที่
+                <input id="workDate" name="workDate" type="date" required />
+              </label>
+              <label>
+                เจ้าหน้าที่
+                <select id="staff" name="staff" required></select>
+              </label>
+              <label>
+                เวลาเริ่ม
+                <input id="startTime" name="startTime" type="time" required />
+              </label>
+              <label>
+                เวลาเสร็จ
+                <input id="endTime" name="endTime" type="time" />
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                หมวดงานหลัก
+                <select id="mainCategory" name="mainCategory" required></select>
+              </label>
+              <label>
+                ประเภทย่อย
+                <select id="subCategory" name="subCategory" required></select>
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                สถานะ
+                <select id="status" name="status" required>
+                  <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+                  <option value="สำเร็จ">สำเร็จ</option>
+                  <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+                  <option value="ต่อเนื่องวันถัดไป">ต่อเนื่องวันถัดไป</option>
+                  <option value="ยกเลิก">ยกเลิก</option>
+                </select>
+              </label>
+              <label>
+                ระยะเวลา
+                <input id="duration" name="duration" type="text" readonly value="-" />
+              </label>
+            </div>
+
+            <label>
+              หัวข้องาน
+              <input id="workTitle" name="workTitle" type="text" maxlength="120" placeholder="เช่น ตรวจสอบระบบอินเทอร์เน็ตอาคาร 2" required />
+            </label>
+
+            <label>
+              รายละเอียดงาน
+              <textarea id="workDetail" name="workDetail" rows="5" maxlength="2000" placeholder="ระบุสิ่งที่ทำ สถานที่ ระบบ อุปกรณ์ หรือผู้เกี่ยวข้อง" required></textarea>
+              <span class="hint"><span id="detailCount">0</span>/2000 ตัวอักษร</span>
+            </label>
+
+            <label>
+              ผลการดำเนินงาน / หมายเหตุ
+              <textarea id="resultNote" name="resultNote" rows="3" maxlength="1000" placeholder="สรุปผล ปัญหาที่พบ หรือสิ่งที่ต้องติดตาม"></textarea>
+            </label>
+
+            <label>
+              ไฟล์แนบ
+              <input id="attachments" name="attachments" type="file" multiple />
+              <span class="hint">ตัวอย่างนี้เก็บเฉพาะชื่อไฟล์ใน browser เพื่อเตรียมต่อระบบ upload ภายหลัง</span>
+            </label>
+
+            <div class="form-actions">
+              <button class="ghost-button" id="resetForm" type="button">ล้างข้อมูล</button>
+              <button class="primary-button" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>
+                บันทึก
+              </button>
+            </div>
+          </form>
+
+          <section class="side-stack">
+            <div class="panel" id="summary">
+              <div class="panel-heading compact">
+                <h2>สรุปวันนี้</h2>
+                <span id="summaryDate"></span>
+              </div>
+              <div class="summary-grid">
+                <div class="metric">
+                  <span>ทั้งหมด</span>
+                  <strong id="countAll">0</strong>
+                  <small>รายการ</small>
+                </div>
+                <div class="metric success">
+                  <span>สำเร็จ</span>
+                  <strong id="countDone">0</strong>
+                  <small>รายการ</small>
+                </div>
+                <div class="metric warning">
+                  <span>ระหว่างทำ</span>
+                  <strong id="countDoing">0</strong>
+                  <small>รายการ</small>
+                </div>
+                <div class="metric danger">
+                  <span>ไม่สำเร็จ</span>
+                  <strong id="countFailed">0</strong>
+                  <small>รายการ</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-heading compact">
+                <h2>รายการวันนี้</h2>
+                <button class="icon-button" id="clearToday" type="button" title="ล้างรายการตัวอย่างของวันนี้">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                </button>
+              </div>
+              <div class="recent-list" id="recentList"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel table-panel" id="log-table">
+          <div class="panel-heading">
+            <div>
+              <h2>รายการบันทึกทั้งหมด</h2>
+              <p>ค้นหาและกรองข้อมูลจาก localStorage</p>
+            </div>
+            <div class="filters">
+              <input id="searchText" type="search" placeholder="ค้นหาหัวข้องาน/รายละเอียด" />
+              <select id="filterStatus">
+                <option value="">ทุกสถานะ</option>
+                <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+                <option value="สำเร็จ">สำเร็จ</option>
+                <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+                <option value="ต่อเนื่องวันถัดไป">ต่อเนื่องวันถัดไป</option>
+                <option value="ยกเลิก">ยกเลิก</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>เวลา</th>
+                  <th>เจ้าหน้าที่</th>
+                  <th>หัวข้องาน</th>
+                  <th>หมวดงาน</th>
+                  <th>สถานะ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="logRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
