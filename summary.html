@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>สรุปรายการทั้งหมด | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260705-7" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Log</strong>
+                <span>สรุปรายการทำงานรายวัน</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>สรุปรายการทั้งหมด</h1>
+            </div>
+          </div>
+          <nav class="nav-list" aria-label="เมนูหลัก">
+            <a class="nav-item" href="./index.html">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
+              </span>
+              กลับไปบันทึกงาน
+            </a>
+          </nav>
+        </header>
+
+        <section class="summary-page-grid">
+          <section class="panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>สรุปวันนี้</h2>
+                <p id="summaryStaff">-</p>
+              </div>
+              <span id="summaryDate"></span>
+            </div>
+            <div class="summary-grid">
+              <div class="metric">
+                <span>ทั้งหมด</span>
+                <strong id="countAll">0</strong>
+                <small>รายการ</small>
+              </div>
+              <div class="metric success">
+                <span>สำเร็จ</span>
+                <strong id="countDone">0</strong>
+                <small>รายการ</small>
+              </div>
+              <div class="metric warning">
+                <span>ระหว่างทำ</span>
+                <strong id="countDoing">0</strong>
+                <small>รายการ</small>
+              </div>
+              <div class="metric danger">
+                <span>ไม่สำเร็จ</span>
+                <strong id="countFailed">0</strong>
+                <small>รายการ</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>รายการวันนี้</h2>
+            </div>
+            <div class="recent-list" id="recentList"></div>
+          </section>
+        </section>
+
+        <section class="panel table-panel" id="log-table">
+          <div class="panel-heading">
+            <div>
+              <h2>รายการบันทึกทั้งหมด</h2>
+              <p id="tableSubtitle">-</p>
+            </div>
+            <div class="filters">
+              <input id="searchText" type="search" placeholder="ค้นหาหัวข้องาน/รายละเอียด" />
+              <select id="filterStatus">
+                <option value="">ทุกสถานะ</option>
+                <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+                <option value="สำเร็จ">สำเร็จ</option>
+                <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+                <option value="ต่อเนื่องวันถัดไป">ต่อเนื่องวันถัดไป</option>
+                <option value="ยกเลิก">ยกเลิก</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>เวลา</th>
+                  <th>หัวข้องาน</th>
+                  <th>หมวดงาน</th>
+                  <th>สถานะ</th>
+                  <th>ผล/หมายเหตุ</th>
+                </tr>
+              </thead>
+              <tbody id="logRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./summary.js?v=20260705-7"></script>
+  </body>
+</html>

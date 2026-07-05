@@ -180,6 +180,18 @@ h2 {
   align-items: start;
 }
 
+.form-only-layout {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.summary-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.7fr);
+  gap: 18px;
+  align-items: start;
+}
+
 .panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -189,7 +201,8 @@ h2 {
 
 .form-panel,
 .table-panel,
-.side-stack .panel {
+.side-stack .panel,
+.summary-page-grid .panel {
   padding: 20px;
 }
 
@@ -643,7 +656,8 @@ tr:last-child td {
 }
 
 @media (max-width: 1080px) {
-  .layout-grid {
+  .layout-grid,
+  .summary-page-grid {
     grid-template-columns: 1fr;
   }
 }

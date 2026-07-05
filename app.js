@@ -94,16 +94,7 @@ const elements = {
   resultNote: document.querySelector("#resultNote"),
   attachments: document.querySelector("#attachments"),
   resetForm: document.querySelector("#resetForm"),
-  clearToday: document.querySelector("#clearToday"),
-  summaryDate: document.querySelector("#summaryDate"),
-  countAll: document.querySelector("#countAll"),
-  countDone: document.querySelector("#countDone"),
-  countDoing: document.querySelector("#countDoing"),
-  countFailed: document.querySelector("#countFailed"),
-  recentList: document.querySelector("#recentList"),
-  logRows: document.querySelector("#logRows"),
-  searchText: document.querySelector("#searchText"),
-  filterStatus: document.querySelector("#filterStatus"),
+  openSummaryPage: document.querySelector("#openSummaryPage"),
   toast: document.querySelector("#toast"),
 };
 
@@ -212,7 +203,6 @@ function selectCalendarDate(isoDate) {
   elements.workDate.value = isoToThaiShortDate(isoDate);
   calendarCursor = dateFromIso(isoDate);
   updateThaiDatePreview();
-  renderSummary();
   closeCalendar();
 }
 
@@ -260,6 +250,15 @@ function getLogIsoDate(log) {
   return log.work_date_iso || thaiDateToIso(log.work_date) || log.work_date;
 }
 
+function getSelectedStaffName() {
+  return elements.staff.value || "";
+}
+
+function isSelectedStaffLog(log) {
+  const selectedStaff = getSelectedStaffName();
+  return !selectedStaff || log.staff_name === selectedStaff;
+}
+
 function nowTime() {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -300,7 +299,10 @@ function getScriptUrl() {
 function makeId(date) {
   const isoDate = thaiDateToIso(date) || date;
   const compactDate = isoDate.replaceAll("-", "");
-  const serial = String(loadLogs().filter((log) => getLogIsoDate(log) === isoDate).length + 1).padStart(4, "0");
+  const selectedStaff = getSelectedStaffName();
+  const serial = String(
+    loadLogs().filter((log) => getLogIsoDate(log) === isoDate && (!selectedStaff || log.staff_name === selectedStaff)).length + 1,
+  ).padStart(4, "0");
   return `LOG-${compactDate}-${serial}`;
 }
 
@@ -372,6 +374,7 @@ function getFilteredLogs() {
   const text = elements.searchText.value.trim().toLowerCase();
   const status = elements.filterStatus.value;
   return loadLogs()
+    .filter(isSelectedStaffLog)
     .filter((log) => !status || log.status === status)
     .filter((log) => {
       if (!text) return true;
@@ -385,7 +388,7 @@ function getFilteredLogs() {
 
 function renderSummary() {
   const date = thaiDateToIso(elements.workDate.value) || today();
-  const todayLogs = loadLogs().filter((log) => getLogIsoDate(log) === date);
+  const todayLogs = loadLogs().filter((log) => getLogIsoDate(log) === date && isSelectedStaffLog(log));
   elements.summaryDate.textContent = isoToThaiDate(date);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
@@ -397,7 +400,7 @@ function renderSummary() {
     .slice(0, 8);
 
   if (!recent.length) {
-    elements.recentList.innerHTML = '<div class="empty-state">ยังไม่มีรายการของวันที่เลือก</div>';
+    elements.recentList.innerHTML = '<div class="empty-state">ยังไม่มีรายการของเจ้าหน้าที่และวันที่เลือก</div>';
     return;
   }
 
@@ -420,7 +423,7 @@ function renderSummary() {
 function renderTable() {
   const logs = getFilteredLogs();
   if (!logs.length) {
-    elements.logRows.innerHTML = '<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลตามเงื่อนไข</div></td></tr>';
+    elements.logRows.innerHTML = '<tr><td colspan="7"><div class="empty-state">ไม่พบข้อมูลของเจ้าหน้าที่ที่เลือกตามเงื่อนไข</div></td></tr>';
     return;
   }
 
@@ -447,8 +450,18 @@ function renderTable() {
 }
 
 function renderAll() {
-  renderSummary();
-  renderTable();
+  return null;
+}
+
+function openSummaryPage() {
+  const staffName = getSelectedStaffName();
+  if (!staffName) {
+    showToast("กรุณาเลือกชื่อเจ้าหน้าที่ก่อนเปิดหน้าสรุป");
+    return;
+  }
+  const date = thaiDateToIso(elements.workDate.value) || today();
+  const url = `summary.html?staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}`;
+  window.open(url, "_blank", "noopener");
 }
 
 function resetForm(keepDate = true) {
@@ -597,49 +610,7 @@ function deleteLog(id) {
 }
 
 function seedIfEmpty() {
-  if (loadLogs().length) return;
-  const date = today();
-  const thaiDate = isoToThaiShortDate(date);
-  saveLogs([
-    {
-      log_id: makeId(date),
-      work_date: thaiDate,
-      work_date_iso: date,
-      staff_name: staffList[0].name,
-      staff_email: staffList[0].email,
-      start_time: "09:00",
-      end_time: "09:35",
-      duration_minutes: 35,
-      main_category: "งานเครือข่ายและโครงสร้างพื้นฐาน",
-      sub_category: "ตรวจสอบระบบเครือข่าย",
-      work_title: "ตรวจสอบ Internet ห้องประชุม",
-      work_detail: "ตรวจสอบอุปกรณ์เครือข่ายและทดสอบการเชื่อมต่อหลังมีรายงานว่าสัญญาณไม่เสถียร",
-      status: "สำเร็จ",
-      result_note: "ใช้งานได้ปกติหลัง reboot access point",
-      attachment_names: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      log_id: `LOG-${date.replaceAll("-", "")}-0002`,
-      work_date: thaiDate,
-      work_date_iso: date,
-      staff_name: staffList[1].name,
-      staff_email: staffList[1].email,
-      start_time: "10:15",
-      end_time: "",
-      duration_minutes: null,
-      main_category: "งานระบบสารสนเทศ บัญชีผู้ใช้ และความปลอดภัย",
-      sub_category: "จัดการบัญชีผู้ใช้ระบบ",
-      work_title: "ตรวจสอบสิทธิ์เข้าใช้งานระบบ Onlearn",
-      work_detail: "ตรวจสอบบัญชีผู้ใช้และกลุ่มสิทธิ์ของรายวิชาที่เปิดสอนภาคปัจจุบัน",
-      status: "ระหว่างดำเนินการ",
-      result_note: "",
-      attachment_names: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  ]);
+  return null;
 }
 
 function bindEvents() {
@@ -649,11 +620,9 @@ function bindEvents() {
   elements.endTime.addEventListener("blur", () => formatTimeInput(elements.endTime));
   elements.workDate.addEventListener("change", () => {
     normalizeDateInput();
-    renderSummary();
   });
   elements.workDate.addEventListener("blur", () => {
     normalizeDateInput();
-    renderSummary();
   });
   elements.openCalendar.addEventListener("click", openCalendar);
   elements.thaiCalendar.addEventListener("click", (event) => {
@@ -677,31 +646,13 @@ function bindEvents() {
     closeCalendar();
   });
   elements.mainCategory.addEventListener("change", updateSubCategories);
+  elements.staff.addEventListener("change", renderAll);
   elements.workDetail.addEventListener("input", () => {
     elements.detailCount.textContent = String(elements.workDetail.value.length);
   });
   elements.form.addEventListener("submit", submitForm);
   elements.resetForm.addEventListener("click", () => resetForm());
-  elements.searchText.addEventListener("input", renderTable);
-  elements.filterStatus.addEventListener("change", renderTable);
-  elements.clearToday.addEventListener("click", () => {
-    const date = thaiDateToIso(elements.workDate.value) || today();
-    saveLogs(loadLogs().filter((log) => getLogIsoDate(log) !== date));
-    renderAll();
-    showToast("ล้างรายการของวันที่เลือกแล้ว");
-  });
-  elements.logRows.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-action]");
-    if (!button) return;
-    const id = button.dataset.id;
-    if (button.dataset.action === "edit") {
-      const log = loadLogs().find((item) => item.log_id === id);
-      if (log) fillForm(log);
-    }
-    if (button.dataset.action === "delete") {
-      deleteLog(id);
-    }
-  });
+  elements.openSummaryPage.addEventListener("click", openSummaryPage);
 }
 
 function init() {
