@@ -248,10 +248,11 @@ function renderAttachments(log) {
   for (let index = 0; index < total; index += 1) {
     const name = names[index] || `ไฟล์แนบ ${index + 1}`;
     const url = urls[index] || "";
+    const isUrl = /^https?:\/\//i.test(url);
     links.push(
-      url
+      isUrl
         ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>`
-        : escapeHtml(name),
+        : escapeHtml(url || name),
     );
   }
   return `<div class="attachment-list">${links.join("")}</div>`;
