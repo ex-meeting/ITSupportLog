@@ -5,9 +5,9 @@
   --text: #1d2528;
   --muted: #647075;
   --border: #dce3e6;
-  --accent: #16756f;
-  --accent-dark: #0f5d58;
-  --accent-soft: #e5f3f1;
+  --accent: #2f5f8f;
+  --accent-dark: #24486d;
+  --accent-soft: #e7eef7;
   --success: #168451;
   --success-soft: #e6f5ee;
   --warning: #a36308;
@@ -72,7 +72,7 @@ svg {
   height: 42px;
   place-items: center;
   border-radius: 8px;
-  background: #18a49b;
+  background: #2f5f8f;
   color: #fff;
   font-weight: 800;
 }
@@ -102,9 +102,9 @@ svg {
   min-height: 42px;
   padding: 0 12px;
   border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: #314044;
+  border: 1px solid #d5dfeb;
+  background: #f8fbff;
+  color: #2f4054;
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
@@ -112,7 +112,7 @@ svg {
 
 .nav-item:hover,
 .nav-item.active {
-  border-color: #bfe0dc;
+  border-color: #b8cbe1;
   background: var(--accent-soft);
   color: var(--accent-dark);
 }
@@ -132,9 +132,9 @@ svg {
   display: grid;
   gap: 16px;
   margin-bottom: 22px;
-  border: 1px solid var(--border);
+  border: 1px solid #d7e1ec;
   border-radius: var(--radius);
-  background: var(--surface);
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
   padding: 18px 20px;
   box-shadow: var(--shadow);
 }
@@ -290,7 +290,7 @@ textarea:focus {
 }
 
 .date-picker-button:hover {
-  background: #d3ebe7;
+  background: #d8e5f3;
 }
 
 .thai-calendar {
@@ -362,7 +362,7 @@ textarea:focus {
 }
 
 .calendar-day.today {
-  border-color: #9ed7d0;
+  border-color: #9bb6d5;
 }
 
 .calendar-day.selected {
