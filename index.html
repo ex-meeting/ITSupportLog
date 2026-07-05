@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>บันทึกการทำงานรายวัน | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260705-21" />
+    <link rel="stylesheet" href="./styles.css?v=20260705-23" />
   </head>
   <body>
     <div class="app-shell">
@@ -36,7 +36,7 @@
             </div>
 
             <div class="field-grid two">
-              <label>
+              <label class="full-field">
                 วันที่
                 <div class="date-input-wrap">
                   <input id="workDate" name="workDate" type="text" inputmode="numeric" placeholder="วว/ดด/ปป เช่น 05/07/69" required />
@@ -47,10 +47,7 @@
                 <div class="thai-calendar" id="thaiCalendar" hidden></div>
                 <span class="hint" id="thaiDatePreview">-</span>
               </label>
-              <label id="staffField" hidden>
-                เจ้าหน้าที่
-                <select id="staff" name="staff" required></select>
-              </label>
+              <input id="staff" name="staff" type="hidden" required />
               <label>
                 เวลาเริ่ม
                 <input id="startTime" name="startTime" type="text" inputmode="numeric" placeholder="HH:mm เช่น 09:00" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" required />
@@ -129,6 +126,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260705-21"></script>
+    <script src="./app.js?v=20260705-23"></script>
   </body>
 </html>
