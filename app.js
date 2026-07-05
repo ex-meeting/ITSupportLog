@@ -462,7 +462,7 @@ function openSummaryPage() {
   }
   const date = thaiDateToIso(elements.workDate.value) || today();
   const url = `summary.html?staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}`;
-  window.open(url, "_blank", "noopener");
+  window.location.href = url;
 }
 
 function resetForm(keepDate = true) {
