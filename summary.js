@@ -21,6 +21,8 @@ const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
 const selectedDate = params.get("date") || today();
 const selectedToken = params.get("token") || "";
+const selectedScope = params.get("scope") || "";
+const isManagerView = selectedScope === "all";
 const summaryAuth = loadSummaryAuth();
 let activeLogs = null;
 
@@ -188,10 +190,19 @@ function normalizeSheetLog(log) {
 
 async function fetchSheetLogs() {
   if (!GOOGLE_SCRIPT_URL) return null;
+  const requestParams = isManagerView
+    ? {
+        action: "list",
+        scope: "all",
+        token: selectedToken,
+      }
+    : {
+        action: "list",
+        staff: selectedStaff,
+        token: selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : ""),
+      };
   const data = await jsonpRequest(GOOGLE_SCRIPT_URL, {
-    action: "list",
-    staff: selectedStaff,
-    token: selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : ""),
+    ...requestParams,
   });
   if (!data.ok || !Array.isArray(data.logs)) throw new Error(data.error || "Cannot load logs");
   return data.logs.map(normalizeSheetLog);
@@ -237,6 +248,7 @@ function allLogs() {
 }
 
 function staffLogs() {
+  if (isManagerView) return allLogs();
   return allLogs().filter((log) => !selectedStaff || log.staff_name === selectedStaff);
 }
 
@@ -248,7 +260,7 @@ function filteredLogs() {
     .filter((log) => !status || log.status === status)
     .filter((log) => {
       if (!text) return true;
-      return [log.work_title, log.work_detail, log.main_category, log.sub_category, log.result_note, log.attachment_names]
+      return [log.staff_name, log.work_title, log.work_detail, log.main_category, log.sub_category, log.result_note, log.attachment_names]
         .join(" ")
         .toLowerCase()
         .includes(text);
@@ -262,7 +274,7 @@ function filteredLogs() {
 
 function renderSummary() {
   const todayLogs = staffLogs().filter((log) => getLogIsoDate(log) === selectedDate);
-  elements.summaryStaff.textContent = selectedStaff || "ไม่ระบุเจ้าหน้าที่";
+  elements.summaryStaff.textContent = isManagerView ? "ภาพรวมเจ้าหน้าที่ทุกคน" : selectedStaff || "ไม่ระบุเจ้าหน้าที่";
   elements.summaryDate.textContent = formatDisplayDate(selectedDate);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
@@ -285,7 +297,7 @@ function renderSummary() {
             <strong>${escapeHtml(log.work_title)}</strong>
             <span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span>
           </div>
-          <p>${escapeHtml(formatTimeRange(log))} · ${durationLabel(log.duration_minutes)}</p>
+          <p>${escapeHtml(formatTimeRange(log))} · ${durationLabel(log.duration_minutes)}${isManagerView ? ` · ${escapeHtml(log.staff_name || "-")}` : ""}</p>
           <p>${escapeHtml(log.main_category)}</p>
         </article>
       `,
@@ -295,12 +307,14 @@ function renderSummary() {
 
 function renderTable() {
   const logs = filteredLogs();
-  elements.tableSubtitle.textContent = selectedStaff
+  elements.tableSubtitle.textContent = isManagerView
+    ? "แสดงรายการของเจ้าหน้าที่ทุกคนจาก Google Sheet"
+    : selectedStaff
     ? `แสดงเฉพาะรายการของ ${selectedStaff}`
     : "ไม่ได้ระบุเจ้าหน้าที่";
 
   if (!logs.length) {
-    elements.logRows.innerHTML = '<tr><td colspan="7"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
+    elements.logRows.innerHTML = '<tr><td colspan="8"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
     return;
   }
 
@@ -310,6 +324,7 @@ function renderTable() {
         <tr>
           <td>${escapeHtml(formatDisplayDate(getLogIsoDate(log)))}</td>
           <td>${escapeHtml(formatTimeRange(log))}<br><small>${durationLabel(log.duration_minutes)}</small></td>
+          <td>${escapeHtml(log.staff_name || "-")}<br><small>${escapeHtml(log.staff_email || "")}</small></td>
           <td><strong>${escapeHtml(log.work_title)}</strong><br><small>${escapeHtml(log.work_detail).slice(0, 120)}</small></td>
           <td>${escapeHtml(log.main_category)}<br><small>${escapeHtml(log.sub_category)}</small></td>
           <td><span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span></td>
@@ -347,6 +362,11 @@ function renderAll() {
 }
 
 function updateBackLink() {
+  if (isManagerView) {
+    elements.backToForm.href = "./manager.html?v=20260706-02";
+    elements.backToForm.textContent = "สรุปภาพรวมผู้บริหาร";
+    return;
+  }
   const staffKey = staffRouteMap[selectedStaff] || selectedStaff;
   const token = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
   if (selectedStaff && token) {
@@ -360,7 +380,13 @@ elements.filterStatus.addEventListener("change", renderTable);
 async function init() {
   updateBackLink();
   const accessToken = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
-  if (!selectedStaff || !accessToken) {
+  if (isManagerView && !selectedToken) {
+    activeLogs = [];
+    renderAll();
+    elements.recentList.innerHTML = '<div class="empty-state">กรุณาเปิดหน้าสรุปจากลิงก์สำหรับผู้บริหาร</div>';
+    return;
+  }
+  if (!isManagerView && (!selectedStaff || !accessToken)) {
     activeLogs = [];
     renderAll();
     elements.recentList.innerHTML = '<div class="empty-state">กรุณาเปิดหน้าสรุปจากลิงก์เฉพาะเจ้าหน้าที่</div>';
@@ -372,7 +398,7 @@ async function init() {
     activeLogs = [];
     renderAll();
     elements.recentList.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div>`;
-    elements.logRows.innerHTML = `<tr><td colspan="7"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
+    elements.logRows.innerHTML = `<tr><td colspan="8"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
     return;
   }
   renderAll();
