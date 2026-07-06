@@ -94,7 +94,6 @@ const elements = {
   openCalendar: document.querySelector("#openCalendar"),
   thaiCalendar: document.querySelector("#thaiCalendar"),
   thaiDatePreview: document.querySelector("#thaiDatePreview"),
-  staffField: document.querySelector("#staffField"),
   staff: document.querySelector("#staff"),
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
@@ -276,13 +275,9 @@ function getEmbeddedStaff() {
 function applyEmbeddedStaffLock() {
   const staff = getEmbeddedStaff();
   if (!staff) {
-    elements.staffField.hidden = false;
-    elements.staff.disabled = false;
     return;
   }
   elements.staff.value = staff.name;
-  elements.staff.disabled = true;
-  elements.staffField.hidden = true;
   elements.formMode.textContent = `แบบฟอร์มของ ${staff.name}`;
 }
 
@@ -816,7 +811,6 @@ function bindEvents() {
     closeCalendar();
   });
   elements.mainCategory.addEventListener("change", updateSubCategories);
-  elements.staff.addEventListener("change", renderAll);
   elements.workDetail.addEventListener("input", () => {
     elements.detailCount.textContent = String(elements.workDetail.value.length);
   });
@@ -826,7 +820,6 @@ function bindEvents() {
 }
 
 function init() {
-  renderOptions(elements.staff, staffList.map((staff) => staff.name), "เลือกเจ้าหน้าที่");
   renderOptions(elements.mainCategory, Object.keys(categoryMap), "เลือกหมวดงานหลัก");
   applyEmbeddedStaffLock();
   elements.workDate.value = isoToThaiShortDate(today());
