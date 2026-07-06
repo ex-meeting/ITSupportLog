@@ -376,10 +376,13 @@ function makeId(date) {
   const isoDate = thaiDateToIso(date) || date;
   const compactDate = isoDate.replaceAll("-", "");
   const selectedStaff = getSelectedStaffName();
+  const staffKey =
+    Object.entries(staffRouteMap).find(([, staffName]) => staffName === selectedStaff)?.[0] || "staff";
   const serial = String(
     loadLogs().filter((log) => getLogIsoDate(log) === isoDate && (!selectedStaff || log.staff_name === selectedStaff)).length + 1,
   ).padStart(4, "0");
-  return `LOG-${compactDate}-${serial}`;
+  const uniquePart = Date.now().toString(36).toUpperCase();
+  return `LOG-${staffKey.toUpperCase()}-${compactDate}-${serial}-${uniquePart}`;
 }
 
 function renderOptions(select, values, placeholder) {

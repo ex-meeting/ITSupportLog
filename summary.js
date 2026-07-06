@@ -363,7 +363,7 @@ function renderAll() {
 
 function updateBackLink() {
   if (isManagerView) {
-    elements.backToForm.href = "./manager.html?v=20260706-02";
+    elements.backToForm.href = "./manager.html?v=20260706-03";
     elements.backToForm.textContent = "สรุปภาพรวมผู้บริหาร";
     return;
   }
