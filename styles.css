@@ -128,6 +128,11 @@ svg {
   padding: 28px;
 }
 
+.form-main {
+  width: min(100%, 1036px);
+  margin: 0 auto;
+}
+
 .topbar {
   display: grid;
   gap: 16px;
@@ -181,8 +186,7 @@ h2 {
 }
 
 .form-only-layout {
-  max-width: 980px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .summary-page-grid {
