@@ -5,9 +5,9 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 const staffList = [
-  { name: "นายมนตรี กิ่งแก้ว", email: "montree@example.local", role: "Supervisor" },
-  { name: "จสอ.ธนบดี ข่ายม่าน", email: "tanabodee@example.local", role: "Staff" },
-  { name: "นายสมพงษ์ แสนชา", email: "somphong@example.local", role: "Staff" },
+  { name: "นายมนตรี กิ่งแก้ว", email: "montree@it.kmitl.ac.th", role: "Supervisor" },
+  { name: "จสอ.ธนบดี ข่ายม่าน", email: "thanabordee@it.kmitl.ac.th", role: "Staff" },
+  { name: "นายสมพงษ์ แสนชา", email: "sompong@it.kmitl.ac.th", role: "Staff" },
 ];
 
 const staffRouteMap = {
