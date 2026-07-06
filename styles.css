@@ -46,6 +46,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 svg {
   width: 18px;
   height: 18px;
@@ -438,6 +443,11 @@ input[readonly] {
 
 .primary-button:hover {
   background: var(--accent-dark);
+}
+
+.primary-button:disabled,
+.primary-button:disabled:hover {
+  background: var(--accent);
 }
 
 .ghost-button {

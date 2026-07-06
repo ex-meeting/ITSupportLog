@@ -108,11 +108,13 @@ const elements = {
   attachments: document.querySelector("#attachments"),
   resetForm: document.querySelector("#resetForm"),
   openSummaryPage: document.querySelector("#openSummaryPage"),
+  submitButton: document.querySelector("#submitButton"),
   toast: document.querySelector("#toast"),
 };
 
 let editId = null;
 let calendarCursor = null;
+let isSubmitting = false;
 
 const thaiMonthNames = [
   "มกราคม",
@@ -694,6 +696,31 @@ function fillForm(log) {
 
 async function submitForm(event) {
   event.preventDefault();
+  if (isSubmitting) {
+    showToast("กำลังบันทึกข้อมูล กรุณารอสักครู่");
+    return;
+  }
+  setSubmitState(true);
+  try {
+    await submitFormInner();
+  } finally {
+    setSubmitState(false);
+  }
+}
+
+function setSubmitState(isSaving) {
+  isSubmitting = isSaving;
+  if (!elements.submitButton) return;
+  if (!elements.submitButton.dataset.defaultHtml) {
+    elements.submitButton.dataset.defaultHtml = elements.submitButton.innerHTML;
+  }
+  elements.submitButton.disabled = isSaving;
+  elements.submitButton.setAttribute("aria-busy", isSaving ? "true" : "false");
+  elements.submitButton.classList.toggle("is-loading", isSaving);
+  elements.submitButton.innerHTML = isSaving ? "กำลังบันทึก..." : elements.submitButton.dataset.defaultHtml;
+}
+
+async function submitFormInner() {
   if (!thaiDateToIso(elements.workDate.value)) {
     showToast("กรุณากรอกวันที่รูปแบบ วว/ดด/ปป หรือเลือกจากปฏิทิน");
     return;
