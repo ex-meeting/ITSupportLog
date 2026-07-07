@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>สรุปรายการทั้งหมด | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260706-03" />
+    <link rel="stylesheet" href="./styles.css?v=20260707-01" />
   </head>
   <body>
     <div class="app-shell">
@@ -94,26 +94,40 @@
           </div>
 
           <div class="table-wrap">
-            <table>
+            <table class="summary-table">
+              <colgroup>
+                <col class="col-date" />
+                <col class="col-time" />
+                <col class="col-staff" />
+                <col class="col-title" />
+                <col class="col-category" />
+                <col class="col-status" />
+                <col class="col-result" />
+                <col class="col-attachments" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>วันที่</th>
-                  <th>เวลา</th>
-                  <th>เจ้าหน้าที่</th>
-                  <th>หัวข้องาน</th>
-                  <th>หมวดงาน</th>
-                  <th>สถานะ</th>
-                  <th>ผล/หมายเหตุ</th>
-                  <th>ไฟล์แนบ</th>
+                  <th class="cell-date">วันที่</th>
+                  <th class="cell-time">เวลา</th>
+                  <th class="cell-staff">เจ้าหน้าที่</th>
+                  <th class="cell-title">หัวข้องาน</th>
+                  <th class="cell-category">หมวดงาน</th>
+                  <th class="cell-status">สถานะ</th>
+                  <th class="cell-result">ผล/หมายเหตุ</th>
+                  <th class="cell-attachments">ไฟล์แนบ</th>
                 </tr>
               </thead>
               <tbody id="logRows"></tbody>
             </table>
           </div>
+          <div class="pagination-bar" id="paginationBar" hidden>
+            <div class="pagination-info" id="paginationInfo">-</div>
+            <div class="pagination-tabs" id="paginationTabs" aria-label="เลือกหน้ารายการ"></div>
+          </div>
         </section>
       </main>
     </div>
 
-    <script src="./summary.js?v=20260706-03"></script>
+    <script src="./summary.js?v=20260707-01"></script>
   </body>
 </html>

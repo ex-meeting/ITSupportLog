@@ -14,8 +14,13 @@ const elements = {
   searchText: document.querySelector("#searchText"),
   filterStatus: document.querySelector("#filterStatus"),
   tableSubtitle: document.querySelector("#tableSubtitle"),
+  paginationBar: document.querySelector("#paginationBar"),
+  paginationInfo: document.querySelector("#paginationInfo"),
+  paginationTabs: document.querySelector("#paginationTabs"),
   backToForm: document.querySelector("#backToForm"),
 };
+
+const PAGE_SIZE = 10;
 
 const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
@@ -25,6 +30,7 @@ const selectedScope = params.get("scope") || "";
 const isManagerView = selectedScope === "all";
 const summaryAuth = loadSummaryAuth();
 let activeLogs = null;
+let currentPage = 1;
 
 const staffRouteMap = {
   "นายมนตรี กิ่งแก้ว": "montree",
@@ -307,6 +313,10 @@ function renderSummary() {
 
 function renderTable() {
   const logs = filteredLogs();
+  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
+  currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageLogs = logs.slice(pageStart, pageStart + PAGE_SIZE);
   elements.tableSubtitle.textContent = isManagerView
     ? "แสดงรายการของเจ้าหน้าที่ทุกคนจาก Google Sheet"
     : selectedStaff
@@ -315,25 +325,46 @@ function renderTable() {
 
   if (!logs.length) {
     elements.logRows.innerHTML = '<tr><td colspan="8"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
+    renderPagination(0, 0, 0);
     return;
   }
 
-  elements.logRows.innerHTML = logs
+  elements.logRows.innerHTML = pageLogs
     .map(
       (log) => `
         <tr>
-          <td>${escapeHtml(formatDisplayDate(getLogIsoDate(log)))}</td>
-          <td>${escapeHtml(formatTimeRange(log))}<br><small>${durationLabel(log.duration_minutes)}</small></td>
-          <td>${escapeHtml(log.staff_name || "-")}<br><small>${escapeHtml(log.staff_email || "")}</small></td>
-          <td><strong>${escapeHtml(log.work_title)}</strong><br><small>${escapeHtml(log.work_detail).slice(0, 120)}</small></td>
-          <td>${escapeHtml(log.main_category)}<br><small>${escapeHtml(log.sub_category)}</small></td>
-          <td><span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span></td>
-          <td>${escapeHtml(log.result_note || "-")}</td>
-          <td>${renderAttachments(log)}</td>
+          <td class="cell-date">${escapeHtml(formatDisplayDate(getLogIsoDate(log)))}</td>
+          <td class="cell-time">${escapeHtml(formatTimeRange(log))}<br><small>${durationLabel(log.duration_minutes)}</small></td>
+          <td class="cell-staff">${escapeHtml(log.staff_name || "-")}<br><small>${escapeHtml(log.staff_email || "")}</small></td>
+          <td class="cell-title"><strong>${escapeHtml(log.work_title)}</strong><br><small>${escapeHtml(log.work_detail).slice(0, 160)}</small></td>
+          <td class="cell-category">${escapeHtml(log.main_category)}<br><small>${escapeHtml(log.sub_category)}</small></td>
+          <td class="cell-status"><span class="${statusClass(log.status)}">${escapeHtml(log.status)}</span></td>
+          <td class="cell-result">${escapeHtml(log.result_note || "-")}</td>
+          <td class="cell-attachments">${renderAttachments(log)}</td>
         </tr>
       `,
     )
     .join("");
+  renderPagination(logs.length, pageStart + 1, pageStart + pageLogs.length);
+}
+
+function renderPagination(totalItems, startItem, endItem) {
+  if (!elements.paginationBar || !elements.paginationInfo || !elements.paginationTabs) return;
+  if (!totalItems) {
+    elements.paginationBar.hidden = true;
+    elements.paginationInfo.textContent = "-";
+    elements.paginationTabs.innerHTML = "";
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  elements.paginationBar.hidden = false;
+  elements.paginationInfo.textContent = `แสดง ${startItem}-${endItem} จาก ${totalItems} รายการ`;
+  elements.paginationTabs.innerHTML = Array.from({ length: totalPages }, (_, index) => {
+    const page = index + 1;
+    const active = page === currentPage ? " active" : "";
+    return `<button class="page-tab${active}" type="button" data-page="${page}" aria-current="${page === currentPage ? "page" : "false"}">${page}</button>`;
+  }).join("");
 }
 
 function renderAttachments(log) {
@@ -363,7 +394,7 @@ function renderAll() {
 
 function updateBackLink() {
   if (isManagerView) {
-    elements.backToForm.href = "./manager.html?v=20260706-03";
+    elements.backToForm.href = "./manager.html?v=20260707-01";
     elements.backToForm.textContent = "สรุปภาพรวมผู้บริหาร";
     return;
   }
@@ -374,8 +405,20 @@ function updateBackLink() {
   }
 }
 
-elements.searchText.addEventListener("input", renderTable);
-elements.filterStatus.addEventListener("change", renderTable);
+elements.searchText.addEventListener("input", () => {
+  currentPage = 1;
+  renderTable();
+});
+elements.filterStatus.addEventListener("change", () => {
+  currentPage = 1;
+  renderTable();
+});
+elements.paginationTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-page]");
+  if (!button) return;
+  currentPage = Number(button.dataset.page) || 1;
+  renderTable();
+});
 
 async function init() {
   updateBackLink();

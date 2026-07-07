@@ -608,6 +608,43 @@ table {
   min-width: 900px;
 }
 
+.summary-table {
+  table-layout: fixed;
+  min-width: 1180px;
+}
+
+.summary-table .col-date {
+  width: 92px;
+}
+
+.summary-table .col-time {
+  width: 112px;
+}
+
+.summary-table .col-staff {
+  width: 150px;
+}
+
+.summary-table .col-title {
+  width: 26%;
+}
+
+.summary-table .col-category {
+  width: 22%;
+}
+
+.summary-table .col-status {
+  width: 120px;
+}
+
+.summary-table .col-result {
+  width: 15%;
+}
+
+.summary-table .col-attachments {
+  width: 86px;
+}
+
 th,
 td {
   border-bottom: 1px solid var(--border);
@@ -624,6 +661,32 @@ th {
 
 td {
   font-size: 13px;
+}
+
+.summary-table td,
+.summary-table th {
+  overflow-wrap: anywhere;
+}
+
+.summary-table .cell-title,
+.summary-table .cell-category {
+  vertical-align: top;
+}
+
+.summary-table .cell-title strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.summary-table .cell-title small,
+.summary-table .cell-category small,
+.summary-table .cell-staff small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.summary-table .cell-attachments {
+  font-size: 12px;
 }
 
 tr:last-child td {
@@ -662,13 +725,56 @@ tr:last-child td {
 }
 
 .attachment-list a {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--accent-dark);
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-decoration: none;
 }
 
 .attachment-list a:hover {
   text-decoration: underline;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.pagination-info {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pagination-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.page-tab {
+  min-width: 36px;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.page-tab:hover,
+.page-tab.active {
+  border-color: #b8cbe1;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
 }
 
 .toast {
@@ -730,6 +836,14 @@ tr:last-child td {
   .filters input,
   .filters select {
     width: 100%;
+  }
+
+  .pagination-bar {
+    display: grid;
+  }
+
+  .pagination-tabs {
+    justify-content: flex-start;
   }
 
   .form-actions {
