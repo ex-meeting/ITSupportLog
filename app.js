@@ -3,6 +3,9 @@ const SCRIPT_URL_KEY = "it-support-google-script-url";
 const SUMMARY_AUTH_KEY = "it-support-summary-auth";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
+const MERGED_PROJECT_CATEGORY = "งานประชุม/ประสานงาน/โครงการ/นโยบาย/อื่น ๆ";
+const LEGACY_PROJECT_CATEGORIES = ["งานโครงการ/นโยบาย/พัฒนางาน", "งานประชุม/ประสานงาน/อื่น ๆ"];
 
 const staffList = [
   { name: "นายมนตรี กิ่งแก้ว", email: "montree@it.kmitl.ac.th", role: "Supervisor" },
@@ -106,12 +109,16 @@ const elements = {
   resetForm: document.querySelector("#resetForm"),
   openSummaryPage: document.querySelector("#openSummaryPage"),
   submitButton: document.querySelector("#submitButton"),
+  pendingWorkList: document.querySelector("#pendingWorkList"),
+  pendingWorkSummary: document.querySelector("#pendingWorkSummary"),
+  refreshPendingWork: document.querySelector("#refreshPendingWork"),
   toast: document.querySelector("#toast"),
 };
 
 let editId = null;
 let calendarCursor = null;
 let isSubmitting = false;
+let pendingWorkItems = [];
 
 const thaiMonthNames = [
   "มกราคม",
@@ -369,6 +376,126 @@ async function verifyStaffAccess(staffName, accessToken) {
     staff: staffName,
     token: accessToken,
   });
+}
+
+async function fetchStaffLogs(staffName, accessToken) {
+  const url = getScriptUrl();
+  if (!url) return [];
+  const data = await jsonpRequest(url, {
+    action: "list",
+    staff: staffName,
+    token: accessToken,
+  });
+  if (!data.ok || !Array.isArray(data.logs)) {
+    throw new Error(data.error || "โหลดรายการงานไม่สำเร็จ");
+  }
+  return data.logs.map(normalizeSheetLog);
+}
+
+function normalizeSheetLog(log) {
+  const duration = Number(log.duration_minutes);
+  return {
+    ...log,
+    duration_minutes: Number.isFinite(duration) ? duration : null,
+  };
+}
+
+function getCurrentCategoryName(category) {
+  return LEGACY_PROJECT_CATEGORIES.includes(category) ? MERGED_PROJECT_CATEGORY : category;
+}
+
+async function loadPendingWorkItems() {
+  if (!elements.pendingWorkList || !elements.pendingWorkSummary) return;
+  const staffName = getSelectedStaffName();
+  const accessToken = getAccessToken();
+  if (!staffName || !accessToken) {
+    pendingWorkItems = [];
+    renderPendingWorkItems("เปิดจากลิงก์เฉพาะเจ้าหน้าที่เพื่อแสดงงานค้าง");
+    return;
+  }
+
+  elements.pendingWorkSummary.textContent = "กำลังโหลดรายการ...";
+  elements.pendingWorkList.innerHTML = '<div class="empty-state compact">กำลังโหลดรายการ</div>';
+  if (elements.refreshPendingWork) elements.refreshPendingWork.disabled = true;
+
+  try {
+    const logs = await fetchStaffLogs(staffName, accessToken);
+    pendingWorkItems = logs
+      .filter((log) => CONTINUING_STATUSES.includes(log.status))
+      .sort((a, b) =>
+        `${getLogIsoDate(b)} ${normalizeTime(b.start_time)}`.localeCompare(
+          `${getLogIsoDate(a)} ${normalizeTime(a.start_time)}`,
+        ),
+      );
+    renderPendingWorkItems();
+  } catch (error) {
+    pendingWorkItems = [];
+    renderPendingWorkItems(error.message || "โหลดรายการงานไม่สำเร็จ");
+  } finally {
+    if (elements.refreshPendingWork) elements.refreshPendingWork.disabled = false;
+  }
+}
+
+function renderPendingWorkItems(message = "") {
+  if (!elements.pendingWorkList || !elements.pendingWorkSummary) return;
+  if (message) {
+    elements.pendingWorkSummary.textContent = message;
+    elements.pendingWorkList.innerHTML = `<div class="empty-state compact">${escapeHtml(message)}</div>`;
+    return;
+  }
+
+  elements.pendingWorkSummary.textContent = pendingWorkItems.length
+    ? `พบ ${pendingWorkItems.length} รายการ`
+    : "ไม่พบงานค้าง/งานต่อเนื่อง";
+
+  if (!pendingWorkItems.length) {
+    elements.pendingWorkList.innerHTML = '<div class="empty-state compact">ไม่มีรายการที่ต้องดึงมาใช้ต่อ</div>';
+    return;
+  }
+
+  elements.pendingWorkList.innerHTML = pendingWorkItems
+    .map(
+      (log, index) => `
+        <article class="pending-work-item">
+          <div class="pending-work-content">
+            <div class="pending-work-title">
+              <strong>${escapeHtml(log.work_title || "-")}</strong>
+              <span class="${statusClass(log.status)}">${escapeHtml(log.status || "-")}</span>
+            </div>
+            <p>${escapeHtml(isoToThaiShortDate(getLogIsoDate(log)))} · ${escapeHtml(normalizeTime(log.start_time) || "-")} · ${escapeHtml(getCurrentCategoryName(log.main_category) || "-")}</p>
+            <p>${escapeHtml(log.work_detail || "-")}</p>
+          </div>
+          <button class="mini-button" type="button" data-pending-index="${index}">ดึงมาใช้</button>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function usePendingWork(index) {
+  const log = pendingWorkItems[index];
+  if (!log) return;
+
+  editId = null;
+  elements.workDate.value = isoToThaiShortDate(today());
+  elements.startTime.value = nowTime();
+  elements.endTime.value = "";
+  elements.duration.value = "-";
+  elements.mainCategory.value = getCurrentCategoryName(log.main_category) || "";
+  updateSubCategories();
+  elements.subCategory.value = log.sub_category || "";
+  elements.status.value = "ระหว่างดำเนินการ";
+  elements.workTitle.value = log.work_title || "";
+  elements.workDetail.value = log.work_detail || "";
+  elements.resultNote.value = log.result_note || "";
+  elements.attachments.value = "";
+  elements.detailCount.textContent = String(elements.workDetail.value.length);
+  updateThaiDatePreview();
+  updateDuration();
+  applyEmbeddedStaffLock();
+  elements.formMode.textContent = `รายการใหม่จากงานเดิม ${log.log_id || ""}`.trim();
+  elements.workTitle.focus();
+  showToast("ดึงข้อมูลงานเดิมมาใส่ฟอร์มแล้ว");
 }
 
 function makeId(date) {
@@ -786,6 +913,7 @@ async function submitFormInner() {
   resetForm();
   if (sheetResult.ok) {
     showToast(existingIndex >= 0 ? "แก้ไขรายการ local และส่งเข้า Google Sheet แล้ว" : "บันทึกและส่งเข้า Google Sheet แล้ว");
+    loadPendingWorkItems();
   } else if (sheetResult.skipped) {
     showToast("บันทึก local แล้ว แต่ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js");
   } else {
@@ -844,6 +972,12 @@ function bindEvents() {
   elements.form.addEventListener("submit", submitForm);
   elements.resetForm.addEventListener("click", () => resetForm());
   elements.openSummaryPage.addEventListener("click", openSummaryPage);
+  elements.refreshPendingWork.addEventListener("click", loadPendingWorkItems);
+  elements.pendingWorkList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-pending-index]");
+    if (!button) return;
+    usePendingWork(Number(button.dataset.pendingIndex));
+  });
 }
 
 function init() {
@@ -856,6 +990,7 @@ function init() {
   bindEvents();
   seedIfEmpty();
   renderAll();
+  loadPendingWorkItems();
 }
 
 init();

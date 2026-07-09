@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>บันทึกการทำงานรายวัน | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260708-01" />
+    <link rel="stylesheet" href="./styles.css?v=20260709-01" />
   </head>
   <body>
     <div class="app-shell">
@@ -34,6 +34,19 @@
               </div>
               <span class="form-mode" id="formMode">รายการใหม่</span>
             </div>
+
+            <section class="pending-work-panel" aria-labelledby="pendingWorkTitle">
+              <div class="pending-work-head">
+                <div>
+                  <h3 id="pendingWorkTitle">งานค้าง/งานต่อเนื่อง</h3>
+                  <p id="pendingWorkSummary">กำลังตรวจสอบรายการ...</p>
+                </div>
+                <button class="mini-button" id="refreshPendingWork" type="button">โหลดใหม่</button>
+              </div>
+              <div class="pending-work-list" id="pendingWorkList">
+                <div class="empty-state compact">กำลังโหลดรายการ</div>
+              </div>
+            </section>
 
             <div class="field-grid two">
               <label class="full-field">
@@ -126,6 +139,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260708-01"></script>
+    <script src="./app.js?v=20260709-01"></script>
   </body>
 </html>
