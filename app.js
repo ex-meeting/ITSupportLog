@@ -119,6 +119,7 @@ let editId = null;
 let calendarCursor = null;
 let isSubmitting = false;
 let pendingWorkItems = [];
+let pendingSourceLogId = "";
 
 const thaiMonthNames = [
   "มกราคม",
@@ -397,11 +398,28 @@ function normalizeSheetLog(log) {
   return {
     ...log,
     duration_minutes: Number.isFinite(duration) ? duration : null,
+    parent_log_id: String(log.parent_log_id || "").trim(),
   };
 }
 
 function getCurrentCategoryName(category) {
   return LEGACY_PROJECT_CATEGORIES.includes(category) ? MERGED_PROJECT_CATEGORY : category;
+}
+
+function normalizeWorkKeyPart(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getPendingWorkKey(log) {
+  const title = normalizeWorkKeyPart(log.work_title);
+  if (!title) return "";
+  return [
+    normalizeWorkKeyPart(log.staff_name),
+    title,
+    normalizeWorkKeyPart(getCurrentCategoryName(log.main_category)),
+    normalizeWorkKeyPart(log.sub_category),
+    normalizeWorkKeyPart(log.work_detail),
+  ].join("|");
 }
 
 async function loadPendingWorkItems() {
@@ -420,8 +438,31 @@ async function loadPendingWorkItems() {
 
   try {
     const logs = await fetchStaffLogs(staffName, accessToken);
+    const supersededLogIds = new Set(
+      logs
+        .map((log) => String(log.parent_log_id || "").trim())
+        .filter(Boolean),
+    );
+    const latestLogIdByWorkKey = new Map();
+    [...logs]
+      .sort((a, b) =>
+        `${getLogIsoDate(b)} ${normalizeTime(b.start_time)} ${b.created_at || ""}`.localeCompare(
+          `${getLogIsoDate(a)} ${normalizeTime(a.start_time)} ${a.created_at || ""}`,
+        ),
+      )
+      .forEach((log) => {
+        const key = getPendingWorkKey(log);
+        if (key && !latestLogIdByWorkKey.has(key)) {
+          latestLogIdByWorkKey.set(key, String(log.log_id || "").trim());
+        }
+      });
     pendingWorkItems = logs
       .filter((log) => CONTINUING_STATUSES.includes(log.status))
+      .filter((log) => !supersededLogIds.has(String(log.log_id || "").trim()))
+      .filter((log) => {
+        const key = getPendingWorkKey(log);
+        return !key || latestLogIdByWorkKey.get(key) === String(log.log_id || "").trim();
+      })
       .sort((a, b) =>
         `${getLogIsoDate(b)} ${normalizeTime(b.start_time)}`.localeCompare(
           `${getLogIsoDate(a)} ${normalizeTime(a.start_time)}`,
@@ -477,6 +518,7 @@ function usePendingWork(index) {
   if (!log) return;
 
   editId = null;
+  pendingSourceLogId = String(log.log_id || "").trim();
   elements.workDate.value = isoToThaiShortDate(today());
   elements.startTime.value = nowTime();
   elements.endTime.value = "";
@@ -703,6 +745,7 @@ function resetForm(keepDate = true) {
   elements.duration.value = "-";
   elements.detailCount.textContent = "0";
   editId = null;
+  pendingSourceLogId = "";
   elements.formMode.textContent = "รายการใหม่";
   applyEmbeddedStaffLock();
 }
@@ -772,6 +815,7 @@ async function collectFormData() {
     attachment_names: attachmentFiles.map((file) => file.name),
     attachment_files: attachmentFiles,
     attachment_urls: [],
+    parent_log_id: pendingSourceLogId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -800,6 +844,7 @@ async function sendToGoogleSheet(data) {
 
 function fillForm(log) {
   editId = log.log_id;
+  pendingSourceLogId = String(log.parent_log_id || "").trim();
   elements.workDate.value = isoToThaiShortDate(getLogIsoDate(log));
   elements.staff.value = log.staff_name;
   elements.startTime.value = normalizeTime(log.start_time);
