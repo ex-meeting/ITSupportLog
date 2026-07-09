@@ -418,7 +418,6 @@ function getPendingWorkKey(log) {
     title,
     normalizeWorkKeyPart(getCurrentCategoryName(log.main_category)),
     normalizeWorkKeyPart(log.sub_category),
-    normalizeWorkKeyPart(log.work_detail),
   ].join("|");
 }
 
