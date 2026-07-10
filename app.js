@@ -3,7 +3,8 @@ const SCRIPT_URL_KEY = "it-support-google-script-url";
 const SUMMARY_AUTH_KEY = "it-support-summary-auth";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
+const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
+const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
 const MERGED_PROJECT_CATEGORY = "งานประชุม/ประสานงาน/โครงการ/นโยบาย/อื่น ๆ";
 const LEGACY_PROJECT_CATEGORIES = ["งานโครงการ/นโยบาย/พัฒนางาน", "งานประชุม/ประสานงาน/อื่น ๆ"];
 
@@ -456,7 +457,7 @@ async function loadPendingWorkItems() {
         }
       });
     pendingWorkItems = logs
-      .filter((log) => CONTINUING_STATUSES.includes(log.status))
+      .filter((log) => [...CONTINUING_STATUSES, ...LEGACY_CONTINUING_STATUSES].includes(log.status))
       .filter((log) => !supersededLogIds.has(String(log.log_id || "").trim()))
       .filter((log) => {
         const key = getPendingWorkKey(log);
@@ -525,7 +526,7 @@ function usePendingWork(index) {
   elements.mainCategory.value = getCurrentCategoryName(log.main_category) || "";
   updateSubCategories();
   elements.subCategory.value = log.sub_category || "";
-  elements.status.value = "ระหว่างดำเนินการ";
+  elements.status.value = "ต่อเนื่องในครั้งถัดไป";
   elements.workTitle.value = log.work_title || "";
   elements.workDetail.value = log.work_detail || "";
   elements.resultNote.value = log.result_note || "";
@@ -638,7 +639,9 @@ function renderSummary() {
   elements.summaryDate.textContent = isoToThaiDate(date);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
-  elements.countDoing.textContent = todayLogs.filter((log) => log.status === "ระหว่างดำเนินการ").length;
+  elements.countDoing.textContent = todayLogs.filter((log) =>
+    [...CONTINUING_STATUSES, ...LEGACY_CONTINUING_STATUSES].includes(log.status),
+  ).length;
   elements.countFailed.textContent = todayLogs.filter((log) => log.status === "ไม่สำเร็จ").length;
 
   const recent = todayLogs
@@ -750,10 +753,10 @@ function resetForm(keepDate = true) {
 }
 
 function validateByStatus(status, endTime, resultNote) {
-  if ((status === "สำเร็จ" || status === "ไม่สำเร็จ") && !endTime) {
-    return "สถานะสำเร็จ/ไม่สำเร็จควรระบุเวลาเสร็จ";
+  if (!endTime) {
+    return "กรุณาระบุเวลาเสร็จของรอบการทำงานครั้งนี้";
   }
-  if ((status === "ไม่สำเร็จ" || status === "ต่อเนื่องวันถัดไป") && !resultNote.trim()) {
+  if ((status === "ไม่สำเร็จ" || status === "ต่อเนื่องในครั้งถัดไป" || status === "ยกเลิก") && !resultNote.trim()) {
     return "กรุณาระบุผลการดำเนินงานหรือสิ่งที่ต้องติดตาม";
   }
   return "";

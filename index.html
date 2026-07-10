@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>บันทึกการทำงานรายวัน | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260709-03" />
+    <link rel="stylesheet" href="./styles.css?v=20260710-01" />
   </head>
   <body>
     <div class="app-shell">
@@ -67,7 +67,7 @@
               </label>
               <label>
                 เวลาเสร็จ
-                <input id="endTime" name="endTime" type="text" inputmode="numeric" placeholder="HH:mm เช่น 17:30" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" />
+                <input id="endTime" name="endTime" type="text" inputmode="numeric" placeholder="HH:mm เช่น 17:30" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" required />
               </label>
             </div>
 
@@ -86,10 +86,9 @@
               <label>
                 สถานะ
                 <select id="status" name="status" required>
-                  <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
                   <option value="สำเร็จ">สำเร็จ</option>
                   <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
-                  <option value="ต่อเนื่องวันถัดไป">ต่อเนื่องวันถัดไป</option>
+                  <option value="ต่อเนื่องในครั้งถัดไป">ต่อเนื่องในครั้งถัดไป</option>
                   <option value="ยกเลิก">ยกเลิก</option>
                 </select>
               </label>
@@ -139,6 +138,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260709-03"></script>
+    <script src="./app.js?v=20260710-01"></script>
   </body>
 </html>

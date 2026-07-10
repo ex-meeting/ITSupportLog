@@ -21,6 +21,8 @@ const elements = {
 };
 
 const PAGE_SIZE = 10;
+const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
+const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
 
 const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
@@ -284,7 +286,9 @@ function renderSummary() {
   elements.summaryDate.textContent = formatDisplayDate(selectedDate);
   elements.countAll.textContent = todayLogs.length;
   elements.countDone.textContent = todayLogs.filter((log) => log.status === "สำเร็จ").length;
-  elements.countDoing.textContent = todayLogs.filter((log) => log.status === "ระหว่างดำเนินการ").length;
+  elements.countDoing.textContent = todayLogs.filter((log) =>
+    [...CONTINUING_STATUSES, ...LEGACY_CONTINUING_STATUSES].includes(log.status),
+  ).length;
   elements.countFailed.textContent = todayLogs.filter((log) => log.status === "ไม่สำเร็จ").length;
 
   const recent = todayLogs
@@ -394,7 +398,7 @@ function renderAll() {
 
 function updateBackLink() {
   if (isManagerView) {
-    elements.backToForm.href = "./manager.html?v=20260707-01";
+    elements.backToForm.href = "./manager.html?v=20260710-01";
     elements.backToForm.textContent = "สรุปภาพรวมผู้บริหาร";
     return;
   }

@@ -641,7 +641,8 @@ input[readonly] {
 }
 
 .status-ระหว่างดำเนินการ,
-.status-ต่อเนื่องวันถัดไป {
+.status-ต่อเนื่องวันถัดไป,
+.status-ต่อเนื่องในครั้งถัดไป {
   background: var(--warning-soft);
   color: var(--warning);
 }
