@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard บันทึกการทำงาน | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260713-01" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main dashboard-main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Log</strong>
+                <span>Dashboard ภาพรวมการทำงาน</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>Dashboard สรุปการทำงาน</h1>
+            </div>
+          </div>
+          <nav class="nav-list" aria-label="เมนูหลัก">
+            <a class="nav-item active" href="./dashboard.html?v=20260713-01&token=MANAGER_TOKEN_20260706_B7N5Q2">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7 15l3-3 3 2 5-7" /></svg>
+              </span>
+              Dashboard
+            </a>
+            <a class="nav-item" href="./summary.html?v=20260713-01&scope=all&token=MANAGER_TOKEN_20260706_B7N5Q2">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></svg>
+              </span>
+              รายการทั้งหมด
+            </a>
+          </nav>
+        </header>
+
+        <section class="panel dashboard-filter-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>ช่วงเวลาที่ต้องการแสดงผล</h2>
+              <p id="dashboardSubtitle">กำลังโหลดข้อมูล...</p>
+            </div>
+            <button class="ghost-button" id="refreshDashboard" type="button">โหลดข้อมูลใหม่</button>
+          </div>
+          <div class="dashboard-filters">
+            <label>
+              วันที่เริ่มต้น
+              <input id="dateFrom" type="date" />
+            </label>
+            <label>
+              วันที่สิ้นสุด
+              <input id="dateTo" type="date" />
+            </label>
+            <label>
+              เจ้าหน้าที่
+              <select id="staffFilter">
+                <option value="">เจ้าหน้าที่ทุกคน</option>
+                <option value="นายมนตรี กิ่งแก้ว">นายมนตรี กิ่งแก้ว</option>
+                <option value="จสอ.ธนบดี ข่ายม่าน">จสอ.ธนบดี ข่ายม่าน</option>
+                <option value="นายสมพงษ์ แสนชา">นายสมพงษ์ แสนชา</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="dashboard-metrics" aria-label="ภาพรวมสถานะงาน">
+          <article class="metric status-card">
+            <span>ทั้งหมด</span>
+            <strong id="metricTotal">0</strong>
+            <small id="metricDuration">0 นาที</small>
+          </article>
+          <article class="metric success status-card">
+            <span>สำเร็จ</span>
+            <strong id="metricDone">0</strong>
+            <small id="metricDoneTime">0 นาที</small>
+          </article>
+          <article class="metric danger status-card">
+            <span>ไม่สำเร็จ</span>
+            <strong id="metricFailed">0</strong>
+            <small id="metricFailedTime">0 นาที</small>
+          </article>
+          <article class="metric warning status-card">
+            <span>ต่อเนื่องในครั้งถัดไป</span>
+            <strong id="metricContinue">0</strong>
+            <small id="metricContinueTime">0 นาที</small>
+          </article>
+          <article class="metric muted status-card">
+            <span>ยกเลิก</span>
+            <strong id="metricCanceled">0</strong>
+            <small id="metricCanceledTime">0 นาที</small>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>ภาพรวมตามหมวดงานหลัก</h2>
+                <p>จำนวนรายการ สถานะ และระยะเวลารวม</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="categoryList"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>ภาพรวมตามประเภทย่อย</h2>
+                <p>แสดง 12 ประเภทที่มีเวลารวมสูงสุด</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="subCategoryList"></div>
+          </section>
+        </section>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>ประสิทธิภาพการทำงานแยกตามเจ้าหน้าที่</h2>
+              <p>แยกตามหมวดงานหลัก ประเภทย่อย สถานะงาน และระยะเวลา</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="summary-table dashboard-table">
+              <thead>
+                <tr>
+                  <th>เจ้าหน้าที่</th>
+                  <th>รายการ</th>
+                  <th>เวลารวม</th>
+                  <th>สำเร็จ</th>
+                  <th>ไม่สำเร็จ</th>
+                  <th>ต่อเนื่อง</th>
+                  <th>ยกเลิก</th>
+                  <th>หมวดงานหลักที่ใช้เวลาสูงสุด</th>
+                  <th>ประเภทย่อยที่ใช้เวลาสูงสุด</th>
+                </tr>
+              </thead>
+              <tbody id="staffRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>สถานะงานตามหมวดงานหลัก</h2>
+                <p>เปรียบเทียบสถานะแต่ละหมวด</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="summary-table compact-table">
+                <thead>
+                  <tr>
+                    <th>หมวดงานหลัก</th>
+                    <th>สำเร็จ</th>
+                    <th>ไม่สำเร็จ</th>
+                    <th>ต่อเนื่อง</th>
+                    <th>ยกเลิก</th>
+                    <th>เวลารวม</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryStatusRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>รายละเอียดตามเจ้าหน้าที่และหมวดงาน</h2>
+                <p>แสดง 15 กลุ่มที่ใช้เวลาสูงสุด</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="staffCategoryList"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./dashboard.js?v=20260713-01"></script>
+  </body>
+</html>
