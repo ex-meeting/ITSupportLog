@@ -1,6 +1,6 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
 const SUMMARY_AUTH_KEY = "it-support-summary-auth";
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I6aa2RVXcn4McRGKojBsZRvNx40N5qyIZP3aJrwYUriYtZNtSXGKEPTEA/exec";
 
 const elements = {
   summaryStaff: document.querySelector("#summaryStaff"),

@@ -1,7 +1,7 @@
 const STORAGE_KEY = "it-support-daily-work-logs";
 const SCRIPT_URL_KEY = "it-support-google-script-url";
 const SUMMARY_AUTH_KEY = "it-support-summary-auth";
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I6aa2RVXcn4McRGKojBsZRvNx40N5qyIZP3aJrwYUriYtZNtSXGKEPTEA/exec";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
 const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];

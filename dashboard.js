@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I6aa2RVXcn4McRGKojBsZRvNx40N5qyIZP3aJrwYUriYtZNtSXGKEPTEA/exec";
 const MANAGER_TOKEN = "MANAGER_TOKEN_20260706_B7N5Q2";
 
 const STATUS_LABELS = ["สำเร็จ", "ไม่สำเร็จ", "ต่อเนื่องในครั้งถัดไป", "ยกเลิก"];
