@@ -1,6 +1,6 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1q74q3Tb_8v7WwNdZNEQcPz3REdBfHXEuDNzb0_9OpsoRS8zjE4ppXkoRfWgyM8FlLg/exec";
 const pageParams = new URLSearchParams(window.location.search);
-const linkedLogId = pageParams.get("log_id") || "";
+const linkedLogId = getLinkedLogId();
 
 const categoryMap = {
   "งานสนับสนุนห้องเรียนและห้องปฏิบัติการ": [
@@ -168,7 +168,7 @@ async function loadLinkedLog() {
   linkedLogReady = false;
   if (!linkedLogId) {
     clearLinkedLogFields();
-    setServiceRefStatus("ไม่พบรหัสรายการงานใน URL กรุณาเปิดลิงก์แบบประเมินจากรายการงานที่ต้องการประเมิน");
+    setServiceRefStatus("ยังไม่พบ log_id ใน URL จึงไม่สามารถดึงรายการงานได้ กรุณาเปิดลิงก์แบบ satisfaction.html?v=20260715-02&log_id=LOG-...");
     setSubmitLocked(true);
     return;
   }
@@ -193,6 +193,16 @@ async function loadLinkedLog() {
     setServiceRefStatus(error.message || "โหลดข้อมูลงานไม่สำเร็จ");
     setSubmitLocked(true);
   }
+}
+
+function getLinkedLogId() {
+  return String(
+    pageParams.get("log_id") ||
+    pageParams.get("logId") ||
+    pageParams.get("id") ||
+    pageParams.get("ref") ||
+    ""
+  ).trim();
 }
 
 function applyLinkedLog(log) {
