@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ประเมินความพึงพอใจ | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260715-01" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main form-main satisfaction-main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Service</strong>
+                <span>แบบประเมินความพึงพอใจ</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>ประเมินความพึงพอใจหลังรับบริการ</h1>
+            </div>
+          </div>
+        </header>
+
+        <section class="form-only-layout">
+          <form class="panel form-panel" id="satisfaction-form" autocomplete="off">
+            <div class="panel-heading">
+              <div>
+                <h2>ข้อมูลผู้รับบริการ</h2>
+                <p>กรอกข้อมูลหลังได้รับบริการเรียบร้อยแล้ว</p>
+              </div>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                ชื่อ-สกุล
+                <input id="recipientName" name="recipientName" type="text" maxlength="120" required />
+              </label>
+              <label>
+                หน่วยงาน
+                <input id="department" name="department" type="text" maxlength="160" required />
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                ประเภทผู้รับบริการ
+                <select id="recipientType" name="recipientType" required>
+                  <option value="">เลือกประเภทผู้รับบริการ</option>
+                  <option value="อาจารย์">อาจารย์</option>
+                  <option value="บุคลากร">บุคลากร</option>
+                  <option value="นักศึกษา">นักศึกษา</option>
+                  <option value="อื่น ๆ">อื่น ๆ</option>
+                </select>
+              </label>
+              <label>
+                อีเมลหรือเบอร์ติดต่อ
+                <input id="contact" name="contact" type="text" maxlength="160" placeholder="ระบุเมื่อสะดวกให้ติดต่อกลับ" />
+              </label>
+            </div>
+
+            <hr class="section-divider" />
+
+            <div class="panel-heading compact">
+              <div>
+                <h2>ข้อมูลงานบริการ</h2>
+                <p>ระบบจะดึงข้อมูลจากรายการงานที่เจ้าหน้าที่บันทึกไว้ตามรหัสงาน</p>
+              </div>
+            </div>
+
+            <div class="service-ref-panel" id="serviceRefPanel">
+              <strong>รายการงานที่ประเมิน</strong>
+              <span id="serviceRefStatus">กำลังตรวจสอบรหัสรายการงาน...</span>
+            </div>
+
+            <label>
+              รหัสรายการงาน
+              <input id="logId" name="logId" type="text" readonly />
+            </label>
+
+            <div class="field-grid two">
+              <label>
+                วันที่รับบริการ
+                <input id="serviceDate" name="serviceDate" type="date" readonly required />
+              </label>
+              <label>
+                เวลาเสร็จงาน
+                <input id="endTime" name="endTime" type="text" readonly required />
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                ชื่อเจ้าหน้าที่ผู้ให้บริการ
+                <input id="staffName" name="staffName" type="text" readonly required />
+              </label>
+              <label>
+                ช่องทางรับบริการ
+                <select id="serviceChannel" name="serviceChannel" required>
+                  <option value="">เลือกช่องทาง</option>
+                  <option value="หน้างาน">หน้างาน</option>
+                  <option value="โทรศัพท์">โทรศัพท์</option>
+                  <option value="Line">Line</option>
+                  <option value="Email">Email</option>
+                  <option value="อื่น ๆ">อื่น ๆ</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label>
+                หมวดงานหลัก
+                <input id="mainCategory" name="mainCategory" type="text" readonly required />
+              </label>
+              <label>
+                ประเภทงานย่อย
+                <input id="subCategory" name="subCategory" type="text" readonly required />
+              </label>
+            </div>
+
+            <label>
+              หัวข้อหรือรายละเอียดปัญหาแบบสั้น
+              <textarea id="workTitle" name="workTitle" rows="3" readonly required></textarea>
+            </label>
+
+            <label>
+              สถานะหลังรับบริการ
+              <input id="serviceStatus" name="serviceStatus" type="text" readonly required />
+            </label>
+
+            <hr class="section-divider" />
+
+            <div class="panel-heading compact">
+              <div>
+                <h2>คะแนนประเมิน</h2>
+                <p>ให้คะแนน 1 = น้อยที่สุด และ 5 = มากที่สุด</p>
+              </div>
+            </div>
+
+            <div class="rating-section" id="ratingSection"></div>
+
+            <label>
+              ข้อเสนอแนะเพิ่มเติม
+              <textarea id="suggestion" name="suggestion" rows="4" maxlength="1500" placeholder="ข้อเสนอแนะ คำชม หรือประเด็นที่ควรปรับปรุง"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button class="ghost-button" id="resetForm" type="reset">ล้างแบบฟอร์ม</button>
+              <button class="primary-button" id="submitButton" type="submit">ส่งแบบประเมิน</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./satisfaction.js?v=20260715-01"></script>
+  </body>
+</html>

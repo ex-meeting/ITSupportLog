@@ -138,6 +138,10 @@ svg {
   margin: 0 auto;
 }
 
+.satisfaction-main {
+  width: min(100%, 980px);
+}
+
 .topbar {
   display: grid;
   gap: 16px;
@@ -599,6 +603,96 @@ input[readonly] {
   font-weight: 400;
 }
 
+.section-divider {
+  height: 1px;
+  margin: 20px 0;
+  border: 0;
+  background: var(--border);
+}
+
+.service-ref-panel {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  border: 1px solid #d7e1ec;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.service-ref-panel strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.service-ref-panel span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rating-section {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rating-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.rating-label {
+  color: #2c383c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rating-options {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  gap: 7px;
+}
+
+.rating-option {
+  display: block;
+  margin: 0;
+}
+
+.rating-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rating-option span {
+  display: grid;
+  width: 40px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.rating-option input:focus-visible + span {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 95, 143, 0.16);
+}
+
+.rating-option input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -1049,8 +1143,17 @@ tr:last-child td {
   }
 
   .pending-work-head,
-  .pending-work-item {
+  .pending-work-item,
+  .rating-row {
     display: grid;
+  }
+
+  .rating-options {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .rating-option span {
+    width: 100%;
   }
 
   .primary-button,
