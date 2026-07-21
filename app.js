@@ -5,6 +5,7 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
 const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
+const SATISFACTION_ELIGIBLE_STATUSES = ["สำเร็จ", "ไม่สำเร็จ", "ยกเลิก"];
 const MERGED_PROJECT_CATEGORY = "งานประชุม/ประสานงาน/โครงการ/นโยบาย/อื่น ๆ";
 const LEGACY_PROJECT_CATEGORIES = ["งานโครงการ/นโยบาย/พัฒนางาน", "งานประชุม/ประสานงาน/อื่น ๆ"];
 
@@ -635,6 +636,10 @@ function showSatisfactionShare(logId) {
   elements.satisfactionSharePanel.hidden = false;
 }
 
+function canCreateSatisfactionShare(status) {
+  return SATISFACTION_ELIGIBLE_STATUSES.includes(status);
+}
+
 function hideSatisfactionShare() {
   if (!elements.satisfactionSharePanel) return;
   elements.satisfactionSharePanel.hidden = true;
@@ -1030,7 +1035,12 @@ async function submitFormInner() {
   resetForm();
   if (sheetResult.ok) {
     showToast(existingIndex >= 0 ? "แก้ไขรายการ local และส่งเข้า Google Sheet แล้ว" : "บันทึกและส่งเข้า Google Sheet แล้ว");
-    showSatisfactionShare(localData.log_id);
+    if (canCreateSatisfactionShare(localData.status)) {
+      showSatisfactionShare(localData.log_id);
+    } else {
+      hideSatisfactionShare();
+      showToast("บันทึกแล้ว งานต่อเนื่องในครั้งถัดไปจะสร้าง QR แบบประเมินเมื่อมีสถานะสิ้นสุด");
+    }
     loadPendingWorkItems();
   } else if (sheetResult.skipped) {
     showToast("บันทึก local แล้ว แต่ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js");
