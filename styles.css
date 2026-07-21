@@ -324,12 +324,55 @@ h2 {
   min-width: 1120px;
 }
 
+.performance-filters {
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+}
+
+.performance-metrics {
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+}
+
+.performance-table {
+  min-width: 1160px;
+}
+
+.performance-follow-table {
+  min-width: 620px;
+}
+
 .score-fill {
   background: linear-gradient(90deg, #2f5f8f, #168451);
 }
 
-.satisfaction-score-row .dashboard-status-line {
+.satisfaction-score-row .dashboard-status-line,
+.performance-score-row .dashboard-status-line {
   justify-content: flex-start;
+}
+
+.score-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.score-chip.good {
+  border-color: #bddfcf;
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.score-chip.warn {
+  border-color: #ead09a;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .panel {

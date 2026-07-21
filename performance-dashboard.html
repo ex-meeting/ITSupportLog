@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard คะแนนประสิทธิภาพ | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260721-06" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main dashboard-main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Performance</strong>
+                <span>Dashboard คะแนนประสิทธิภาพ</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>Dashboard สรุปคะแนนประสิทธิภาพเจ้าหน้าที่</h1>
+            </div>
+          </div>
+        </header>
+
+        <section class="panel dashboard-filter-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>ตัวกรองข้อมูล</h2>
+              <p id="performanceSubtitle">กำลังโหลดข้อมูล...</p>
+            </div>
+            <button class="ghost-button" id="refreshPerformance" type="button">โหลดข้อมูลใหม่</button>
+          </div>
+          <div class="dashboard-filters performance-filters">
+            <label>
+              วันที่เริ่มต้น
+              <input id="dateFrom" type="date" />
+            </label>
+            <label>
+              วันที่สิ้นสุด
+              <input id="dateTo" type="date" />
+            </label>
+            <label>
+              เจ้าหน้าที่
+              <select id="staffFilter">
+                <option value="">เจ้าหน้าที่ทุกคน</option>
+                <option value="นายมนตรี กิ่งแก้ว">นายมนตรี กิ่งแก้ว</option>
+                <option value="จสอ.ธนบดี ข่ายม่าน">จสอ.ธนบดี ข่ายม่าน</option>
+                <option value="นายสมพงษ์ แสนชา">นายสมพงษ์ แสนชา</option>
+              </select>
+            </label>
+            <label>
+              หมวดงานหลัก
+              <select id="categoryFilter">
+                <option value="">หมวดงานทุกประเภท</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="dashboard-metrics performance-metrics" aria-label="ภาพรวมคะแนนประสิทธิภาพ">
+          <article class="metric success status-card">
+            <span>คะแนนรวมเฉลี่ย</span>
+            <strong id="metricTotalScore">0.00</strong>
+            <small>จาก 100 คะแนน</small>
+          </article>
+          <article class="metric status-card">
+            <span>คะแนนเชิงปริมาณ</span>
+            <strong id="metricQuantityScore">0.00</strong>
+            <small>น้ำหนัก 70 คะแนน</small>
+          </article>
+          <article class="metric warning status-card">
+            <span>คะแนนเชิงคุณภาพ</span>
+            <strong id="metricQualityScore">0.00</strong>
+            <small>น้ำหนัก 30 คะแนน</small>
+          </article>
+          <article class="metric status-card">
+            <span>รายการงาน</span>
+            <strong id="metricLogs">0</strong>
+            <small id="metricMinutes">0 นาที</small>
+          </article>
+          <article class="metric muted status-card">
+            <span>แบบประเมิน</span>
+            <strong id="metricEvaluations">0</strong>
+            <small id="metricConfidence">ความเชื่อมั่น 0%</small>
+          </article>
+        </section>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>คะแนนประสิทธิภาพรายเจ้าหน้าที่</h2>
+              <p>คำนวณจากคะแนนเชิงปริมาณ 70 คะแนน และคะแนนเชิงคุณภาพ 30 คะแนน</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="summary-table dashboard-table performance-table">
+              <thead>
+                <tr>
+                  <th>เจ้าหน้าที่</th>
+                  <th>คะแนนรวม</th>
+                  <th>เชิงปริมาณ</th>
+                  <th>เชิงคุณภาพ</th>
+                  <th>งาน</th>
+                  <th>เวลารวม</th>
+                  <th>สำเร็จ</th>
+                  <th>แบบประเมิน</th>
+                  <th>คะแนนเฉลี่ย</th>
+                  <th>ระดับข้อมูล</th>
+                </tr>
+              </thead>
+              <tbody id="staffRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>องค์ประกอบคะแนนเชิงปริมาณ</h2>
+                <p>แสดงคะแนนย่อยของเจ้าหน้าที่ที่เลือกหรือทุกคน</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="quantityList"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>องค์ประกอบคะแนนเชิงคุณภาพ</h2>
+                <p>ถ่วงด้วยจำนวนแบบประเมินขั้นต่ำ 5 รายการต่อช่วงเวลา</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="qualityList"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>คะแนนตามหมวดงานหลัก</h2>
+                <p>ภาพรวมภาระงานและคะแนนความพึงพอใจตามหมวดงาน</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="categoryList"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>รายการที่ควรติดตาม</h2>
+                <p>เจ้าหน้าที่ที่มีคะแนนต่ำ หรือข้อมูลประเมินยังไม่เพียงพอ</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="summary-table compact-table performance-follow-table">
+                <thead>
+                  <tr>
+                    <th>เจ้าหน้าที่</th>
+                    <th>ประเด็น</th>
+                    <th>คะแนนรวม</th>
+                  </tr>
+                </thead>
+                <tbody id="followUpRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./performance-dashboard.js?v=20260721-01"></script>
+  </body>
+</html>
