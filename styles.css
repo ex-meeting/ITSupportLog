@@ -316,6 +316,22 @@ h2 {
   vertical-align: top;
 }
 
+.satisfaction-table {
+  min-width: 980px;
+}
+
+.satisfaction-detail-table {
+  min-width: 1120px;
+}
+
+.score-fill {
+  background: linear-gradient(90deg, #2f5f8f, #168451);
+}
+
+.satisfaction-score-row .dashboard-status-line {
+  justify-content: flex-start;
+}
+
 .panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard ความพึงพอใจ | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260721-05" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main dashboard-main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Service</strong>
+                <span>Dashboard ความพึงพอใจ</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>Dashboard สรุปผลการประเมินความพึงพอใจ</h1>
+            </div>
+          </div>
+        </header>
+
+        <section class="panel dashboard-filter-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>ตัวกรองข้อมูล</h2>
+              <p id="satisfactionSubtitle">กำลังโหลดข้อมูล...</p>
+            </div>
+            <button class="ghost-button" id="refreshSatisfaction" type="button">โหลดข้อมูลใหม่</button>
+          </div>
+          <div class="dashboard-filters satisfaction-filters">
+            <label>
+              วันที่เริ่มต้น
+              <input id="dateFrom" type="date" />
+            </label>
+            <label>
+              วันที่สิ้นสุด
+              <input id="dateTo" type="date" />
+            </label>
+            <label>
+              เจ้าหน้าที่
+              <select id="staffFilter">
+                <option value="">เจ้าหน้าที่ทุกคน</option>
+                <option value="นายมนตรี กิ่งแก้ว">นายมนตรี กิ่งแก้ว</option>
+                <option value="จสอ.ธนบดี ข่ายม่าน">จสอ.ธนบดี ข่ายม่าน</option>
+                <option value="นายสมพงษ์ แสนชา">นายสมพงษ์ แสนชา</option>
+              </select>
+            </label>
+            <label>
+              หมวดงานหลัก
+              <select id="categoryFilter">
+                <option value="">หมวดงานทุกประเภท</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="dashboard-metrics satisfaction-metrics" aria-label="ภาพรวมผลประเมิน">
+          <article class="metric status-card">
+            <span>แบบประเมินทั้งหมด</span>
+            <strong id="metricTotal">0</strong>
+            <small id="metricCoverage">0 งานที่ถูกประเมิน</small>
+          </article>
+          <article class="metric success status-card">
+            <span>คะแนนเฉลี่ยรวม</span>
+            <strong id="metricOverall">0.00</strong>
+            <small id="metricOverallLabel">จาก 5 คะแนน</small>
+          </article>
+          <article class="metric status-card">
+            <span>คะแนนต่ำที่ควรติดตาม</span>
+            <strong id="metricLowScore">0</strong>
+            <small>คะแนนรวม 3 หรือต่ำกว่า</small>
+          </article>
+          <article class="metric warning status-card">
+            <span>คะแนนการสื่อสาร</span>
+            <strong id="metricCommunication">0.00</strong>
+            <small>สุภาพและสื่อสารชัดเจน</small>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>คะแนนเฉลี่ยรายด้าน</h2>
+                <p>เปรียบเทียบ 6 มิติของบริการ</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="dimensionList"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>แนวโน้มรายเดือน</h2>
+                <p>จำนวนแบบประเมินและคะแนนเฉลี่ยรวม</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="monthlyList"></div>
+          </section>
+        </section>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>ผลประเมินแยกตามเจ้าหน้าที่</h2>
+              <p>คะแนนเฉลี่ยรายด้าน จำนวนแบบประเมิน และคะแนนต่ำที่ควรติดตาม</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="summary-table dashboard-table satisfaction-table">
+              <thead>
+                <tr>
+                  <th>เจ้าหน้าที่</th>
+                  <th>แบบประเมิน</th>
+                  <th>คะแนนรวม</th>
+                  <th>รวดเร็ว</th>
+                  <th>สื่อสาร</th>
+                  <th>ความสามารถ</th>
+                  <th>คำแนะนำ</th>
+                  <th>ผลลัพธ์</th>
+                  <th>คะแนนต่ำ</th>
+                </tr>
+              </thead>
+              <tbody id="staffRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>คะแนนตามหมวดงานหลัก</h2>
+                <p>แสดงหมวดงานที่ได้รับการประเมินมากที่สุด</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="categoryList"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>คะแนนตามประเภทย่อย</h2>
+                <p>แสดง 12 ประเภทงานย่อยที่ได้รับการประเมินมากที่สุด</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="subCategoryList"></div>
+          </section>
+        </section>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>รายการที่ควรติดตาม</h2>
+              <p>แบบประเมินที่มีคะแนนรวม 3 หรือต่ำกว่า หรือมีข้อเสนอแนะเพิ่มเติม</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="summary-table dashboard-table satisfaction-detail-table">
+              <thead>
+                <tr>
+                  <th>วันที่ประเมิน</th>
+                  <th>เจ้าหน้าที่</th>
+                  <th>หัวข้องาน</th>
+                  <th>หมวดงาน</th>
+                  <th>คะแนนรวม</th>
+                  <th>ข้อเสนอแนะ</th>
+                </tr>
+              </thead>
+              <tbody id="followUpRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./satisfaction-dashboard.js?v=20260721-05"></script>
+  </body>
+</html>
