@@ -92,11 +92,16 @@ const elements = {
   serviceStatus: document.querySelector("#serviceStatus"),
   suggestion: document.querySelector("#suggestion"),
   ratingSection: document.querySelector("#ratingSection"),
+  confirmModal: document.querySelector("#confirmModal"),
+  confirmSummary: document.querySelector("#confirmSummary"),
+  confirmSubmit: document.querySelector("#confirmSubmit"),
+  editEvaluation: document.querySelector("#editEvaluation"),
   submitButton: document.querySelector("#submitButton"),
   toast: document.querySelector("#toast"),
 };
 
 let linkedLogReady = false;
+let pendingPayload = null;
 
 function init() {
   renderRatingItems();
@@ -104,6 +109,14 @@ function init() {
   setSubmitLocked(true);
   loadLinkedLog();
   elements.form.addEventListener("submit", handleSubmit);
+  elements.confirmSubmit.addEventListener("click", confirmAndSubmit);
+  elements.editEvaluation.addEventListener("click", closeConfirmModal);
+  elements.confirmModal.addEventListener("click", (event) => {
+    if (event.target === elements.confirmModal) closeConfirmModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.confirmModal.hidden) closeConfirmModal();
+  });
   elements.form.addEventListener("reset", () => {
     window.setTimeout(() => {
       loadLinkedLog();
@@ -149,18 +162,58 @@ async function handleSubmit(event) {
 
   if (!elements.form.reportValidity()) return;
 
-  const payload = collectPayload();
+  pendingPayload = collectPayload();
+  openConfirmModal(pendingPayload);
+}
+
+async function confirmAndSubmit() {
+  if (!pendingPayload) return;
+  const payload = pendingPayload;
   setSubmitting(true);
+  setConfirmSubmitting(true);
   try {
     await submitPayload(payload);
-    elements.form.reset();
-    loadLinkedLog();
+    pendingPayload = null;
+    closeConfirmModal();
     showToast("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณครับ");
+    finishAndClosePage();
   } catch (error) {
     showToast(`ส่งข้อมูลไม่สำเร็จ: ${error.message}`);
   } finally {
+    setConfirmSubmitting(false);
     setSubmitting(false);
   }
+}
+
+function openConfirmModal(payload) {
+  elements.confirmSummary.innerHTML = renderConfirmSummary(payload);
+  elements.confirmModal.hidden = false;
+  elements.confirmSubmit.focus();
+}
+
+function closeConfirmModal() {
+  elements.confirmModal.hidden = true;
+  elements.submitButton.focus();
+}
+
+function renderConfirmSummary(payload) {
+  const suggestion = payload.suggestion || "-";
+  const overall = payload.overall_score ? `${payload.overall_score} / 5` : "-";
+  const rows = [
+    ["รหัสรายการงาน", payload.log_id],
+    ["เจ้าหน้าที่ผู้ให้บริการ", payload.staff_name],
+    ["หัวข้องาน", payload.work_title],
+    ["สถานะงาน", payload.service_status],
+    ["คะแนนความพึงพอใจโดยรวม", overall],
+    ["ข้อเสนอแนะเพิ่มเติม", suggestion],
+  ];
+
+  return rows.map(([label, value]) => `
+    <div class="confirm-summary-row">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || "-")}</strong>
+    </div>
+  `).join("");
 }
 
 async function loadLinkedLog() {
@@ -316,6 +369,34 @@ async function submitPayload(payload) {
 function setSubmitting(isSubmitting) {
   elements.submitButton.disabled = isSubmitting || !linkedLogReady;
   elements.submitButton.textContent = isSubmitting ? "กำลังส่งข้อมูล..." : "ส่งแบบประเมิน";
+}
+
+function setConfirmSubmitting(isSubmitting) {
+  elements.confirmSubmit.disabled = isSubmitting;
+  elements.editEvaluation.disabled = isSubmitting;
+  elements.confirmSubmit.textContent = isSubmitting ? "กำลังส่งข้อมูล..." : "ยืนยันส่งแบบประเมิน";
+}
+
+function finishAndClosePage() {
+  window.close();
+  window.setTimeout(() => {
+    if (document.hidden) return;
+    document.body.innerHTML = `
+      <main class="main form-main satisfaction-main">
+        <section class="panel form-panel completion-panel">
+          <div class="brand">
+            <div class="brand-mark">IT</div>
+            <div>
+              <strong>ส่งแบบประเมินเรียบร้อยแล้ว</strong>
+              <span>ขอบคุณสำหรับความคิดเห็น</span>
+            </div>
+          </div>
+          <p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว สามารถปิดหน้านี้ได้</p>
+          <button class="primary-button" type="button" onclick="window.close()">ปิดหน้านี้</button>
+        </section>
+      </main>
+    `;
+  }, 700);
 }
 
 function normalizeTime(value) {

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ประเมินความพึงพอใจ | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260715-03" />
+    <link rel="stylesheet" href="./styles.css?v=20260721-02" />
   </head>
   <body>
     <div class="app-shell">
@@ -156,6 +156,23 @@
       </main>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./satisfaction.js?v=20260715-03"></script>
+
+    <div class="modal-backdrop" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+      <div class="confirm-modal">
+        <div class="modal-head">
+          <div>
+            <p class="section-label">ตรวจสอบก่อนยืนยัน</p>
+            <h2 id="confirmTitle">ยืนยันส่งแบบประเมิน</h2>
+          </div>
+        </div>
+        <div class="confirm-summary" id="confirmSummary"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="editEvaluation" type="button">กลับไปแก้ไข</button>
+          <button class="primary-button" id="confirmSubmit" type="button">ยืนยันส่งแบบประเมิน</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./satisfaction.js?v=20260721-02"></script>
   </body>
 </html>

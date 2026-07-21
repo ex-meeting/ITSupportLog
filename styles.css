@@ -630,6 +630,85 @@ input[readonly] {
   font-size: 12px;
 }
 
+.modal-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 35, 38, 0.42);
+  padding: 20px;
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.confirm-modal {
+  width: min(100%, 560px);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.modal-head {
+  margin-bottom: 14px;
+}
+
+.modal-head h2 {
+  margin-bottom: 0;
+  font-size: 20px;
+}
+
+.confirm-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.confirm-summary-row {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+}
+
+.confirm-summary-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.confirm-summary-row strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.completion-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 12vh;
+}
+
+.completion-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .rating-section {
   display: grid;
   gap: 10px;
@@ -1201,6 +1280,10 @@ tr:last-child td {
   }
 
   .form-actions {
+    display: grid;
+  }
+
+  .modal-actions {
     display: grid;
   }
 
