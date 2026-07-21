@@ -700,6 +700,68 @@ input[readonly] {
   padding-top: 6px;
 }
 
+.satisfaction-share-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1px solid #cbd9e8;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 16px;
+}
+
+.satisfaction-share-panel[hidden] {
+  display: none;
+}
+
+.satisfaction-share-copy h3 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 17px;
+}
+
+.satisfaction-share-copy p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.qr-share-layout {
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.qr-code-box {
+  display: grid;
+  width: 178px;
+  height: 178px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.qr-code-box img {
+  width: 156px;
+  height: 156px;
+  object-fit: contain;
+}
+
+.qr-share-actions {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .primary-button,
 .ghost-button,
 .icon-button {
@@ -1140,6 +1202,16 @@ tr:last-child td {
 
   .form-actions {
     display: grid;
+  }
+
+  .qr-share-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-code-box {
+    width: 100%;
+    height: auto;
+    min-height: 178px;
   }
 
   .pending-work-head,

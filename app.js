@@ -110,6 +110,12 @@ const elements = {
   resetForm: document.querySelector("#resetForm"),
   openSummaryPage: document.querySelector("#openSummaryPage"),
   submitButton: document.querySelector("#submitButton"),
+  satisfactionSharePanel: document.querySelector("#satisfactionSharePanel"),
+  satisfactionShareStatus: document.querySelector("#satisfactionShareStatus"),
+  satisfactionQrImage: document.querySelector("#satisfactionQrImage"),
+  satisfactionUrl: document.querySelector("#satisfactionUrl"),
+  openSatisfactionForm: document.querySelector("#openSatisfactionForm"),
+  copySatisfactionUrl: document.querySelector("#copySatisfactionUrl"),
   pendingWorkList: document.querySelector("#pendingWorkList"),
   pendingWorkSummary: document.querySelector("#pendingWorkSummary"),
   refreshPendingWork: document.querySelector("#refreshPendingWork"),
@@ -333,6 +339,19 @@ function getScriptUrl() {
 
 function getAccessToken() {
   return embeddedAccessToken;
+}
+
+function getAppBasePath() {
+  return window.location.href.split("?")[0].replace(/[^/]*$/, "");
+}
+
+function makeSatisfactionUrl(logId) {
+  return `${getAppBasePath()}satisfaction.html?v=20260721-01&log_id=${encodeURIComponent(logId)}`;
+}
+
+function makeQrCodeUrl(targetUrl) {
+  const data = encodeURIComponent(targetUrl);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${data}`;
 }
 
 function jsonpRequest(baseUrl, params = {}) {
@@ -602,6 +621,57 @@ function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.classList.add("show");
   window.setTimeout(() => elements.toast.classList.remove("show"), 2400);
+}
+
+function showSatisfactionShare(logId) {
+  if (!elements.satisfactionSharePanel || !elements.satisfactionUrl || !elements.satisfactionQrImage) return;
+  const url = makeSatisfactionUrl(logId);
+  elements.satisfactionUrl.value = url;
+  elements.satisfactionQrImage.src = makeQrCodeUrl(url);
+  elements.satisfactionQrImage.hidden = false;
+  if (elements.satisfactionShareStatus) {
+    elements.satisfactionShareStatus.textContent = `ผูกกับรหัสรายการงาน ${logId}`;
+  }
+  elements.satisfactionSharePanel.hidden = false;
+}
+
+function hideSatisfactionShare() {
+  if (!elements.satisfactionSharePanel) return;
+  elements.satisfactionSharePanel.hidden = true;
+  if (elements.satisfactionUrl) elements.satisfactionUrl.value = "";
+  if (elements.satisfactionQrImage) {
+    elements.satisfactionQrImage.removeAttribute("src");
+    elements.satisfactionQrImage.hidden = true;
+  }
+}
+
+async function copySatisfactionUrl() {
+  const url = elements.satisfactionUrl?.value || "";
+  if (!url) {
+    showToast("ยังไม่มีลิงก์แบบประเมิน");
+    return;
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      elements.satisfactionUrl.select();
+      document.execCommand("copy");
+      elements.satisfactionUrl.blur();
+    }
+    showToast("คัดลอกลิงก์แบบประเมินแล้ว");
+  } catch {
+    showToast("คัดลอกลิงก์ไม่สำเร็จ กรุณาคัดลอกจากช่องลิงก์โดยตรง");
+  }
+}
+
+function openSatisfactionForm() {
+  const url = elements.satisfactionUrl?.value || "";
+  if (!url) {
+    showToast("ยังไม่มีลิงก์แบบประเมิน");
+    return;
+  }
+  window.open(url, "_blank", "noopener");
 }
 
 function statusClass(status) {
@@ -960,6 +1030,7 @@ async function submitFormInner() {
   resetForm();
   if (sheetResult.ok) {
     showToast(existingIndex >= 0 ? "แก้ไขรายการ local และส่งเข้า Google Sheet แล้ว" : "บันทึกและส่งเข้า Google Sheet แล้ว");
+    showSatisfactionShare(localData.log_id);
     loadPendingWorkItems();
   } else if (sheetResult.skipped) {
     showToast("บันทึก local แล้ว แต่ยังไม่ได้ตั้งค่า GOOGLE_SCRIPT_URL ใน app.js");
@@ -1017,8 +1088,13 @@ function bindEvents() {
     elements.detailCount.textContent = String(elements.workDetail.value.length);
   });
   elements.form.addEventListener("submit", submitForm);
-  elements.resetForm.addEventListener("click", () => resetForm());
+  elements.resetForm.addEventListener("click", () => {
+    hideSatisfactionShare();
+    resetForm();
+  });
   elements.openSummaryPage.addEventListener("click", openSummaryPage);
+  if (elements.openSatisfactionForm) elements.openSatisfactionForm.addEventListener("click", openSatisfactionForm);
+  if (elements.copySatisfactionUrl) elements.copySatisfactionUrl.addEventListener("click", copySatisfactionUrl);
   elements.refreshPendingWork.addEventListener("click", loadPendingWorkItems);
   elements.pendingWorkList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-pending-index]");
