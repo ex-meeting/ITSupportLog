@@ -53,7 +53,7 @@ const categoryMap = {
     "ติดตั้งโปรแกรม",
     "แก้ปัญหาการใช้งาน",
     "ยืมคืนทรัพยากรสารสนเทศ",
-    "อบรม/บริการวิชาการที่ได้รับมอบหมาย",
+    "ประสานงานบริการ",
     "อื่น ๆ",
   ],
   "งานเครือข่ายและโครงสร้างพื้นฐาน": [
@@ -86,7 +86,7 @@ const categoryMap = {
     "ประชุมกรรมการ",
     "ประสานงานหน่วยงาน",
     "กรรมการตรวจรับ",
-    "อบรม/สัมนาเพื่อพัฒนาทักษะ",
+    "อบรมพัฒนาศักยภาพ",
     "อื่น ๆ",
   ],
 };
@@ -658,18 +658,58 @@ async function copySatisfactionUrl() {
     showToast("ยังไม่มีลิงก์แบบประเมิน");
     return;
   }
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-    } else {
-      elements.satisfactionUrl.select();
-      document.execCommand("copy");
-      elements.satisfactionUrl.blur();
-    }
+  const copied = await copyTextToClipboard(url);
+  if (copied) {
     showToast("คัดลอกลิงก์แบบประเมินแล้ว");
-  } catch {
+  } else {
+    if (elements.satisfactionUrl) {
+      elements.satisfactionUrl.focus();
+      elements.satisfactionUrl.select();
+      elements.satisfactionUrl.setSelectionRange(0, elements.satisfactionUrl.value.length);
+    }
     showToast("คัดลอกลิงก์ไม่สำเร็จ กรุณาคัดลอกจากช่องลิงก์โดยตรง");
   }
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to the temporary textarea method below.
+    }
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.width = "1px";
+  textArea.style.height = "1px";
+  textArea.style.opacity = "0";
+  textArea.style.pointerEvents = "none";
+  document.body.appendChild(textArea);
+
+  const activeElement = document.activeElement;
+  textArea.focus();
+  textArea.select();
+  textArea.setSelectionRange(0, textArea.value.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  textArea.remove();
+  if (activeElement && typeof activeElement.focus === "function") {
+    activeElement.focus();
+  }
+  return copied;
 }
 
 function openSatisfactionForm() {
