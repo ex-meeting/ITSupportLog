@@ -349,6 +349,27 @@ h2 {
   justify-content: flex-start;
 }
 
+.satisfaction-date-filters {
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+}
+
+.satisfaction-summary-grid {
+  margin-bottom: 18px;
+}
+
+.satisfaction-summary-panels {
+  margin-bottom: 18px;
+}
+
+.inline-panel {
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+
+.satisfaction-follow-table {
+  min-width: 760px;
+}
+
 .score-chip {
   display: inline-flex;
   align-items: center;
@@ -1308,6 +1329,7 @@ tr:last-child td {
 
   .field-grid.two,
   .summary-grid,
+  .satisfaction-date-filters,
   .dashboard-filters,
   .dashboard-metrics {
     grid-template-columns: 1fr;

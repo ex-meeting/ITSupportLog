@@ -18,11 +18,27 @@ const elements = {
   paginationInfo: document.querySelector("#paginationInfo"),
   paginationTabs: document.querySelector("#paginationTabs"),
   backToForm: document.querySelector("#backToForm"),
+  satisfactionDateFrom: document.querySelector("#satisfactionDateFrom"),
+  satisfactionDateTo: document.querySelector("#satisfactionDateTo"),
+  satisfactionSubtitle: document.querySelector("#satisfactionSubtitle"),
+  satisfactionCount: document.querySelector("#satisfactionCount"),
+  satisfactionOverall: document.querySelector("#satisfactionOverall"),
+  satisfactionLowCount: document.querySelector("#satisfactionLowCount"),
+  satisfactionScoreList: document.querySelector("#satisfactionScoreList"),
+  satisfactionSuggestionList: document.querySelector("#satisfactionSuggestionList"),
+  satisfactionFollowRows: document.querySelector("#satisfactionFollowRows"),
 };
 
 const PAGE_SIZE = 10;
 const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
 const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
+const SATISFACTION_SCORE_FIELDS = [
+  { key: "speed_score", label: "ความรวดเร็ว" },
+  { key: "communication_score", label: "การสื่อสาร" },
+  { key: "technical_score", label: "ความสามารถ" },
+  { key: "clarity_score", label: "คำแนะนำ" },
+  { key: "outcome_score", label: "ผลลัพธ์" },
+];
 
 const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
@@ -32,6 +48,7 @@ const selectedScope = params.get("scope") || "";
 const isManagerView = selectedScope === "all";
 const summaryAuth = loadSummaryAuth();
 let activeLogs = null;
+let activeEvaluations = null;
 let currentPage = 1;
 
 const staffRouteMap = {
@@ -216,6 +233,49 @@ async function fetchSheetLogs() {
   return data.logs.map(normalizeSheetLog);
 }
 
+function normalizeScore(value) {
+  const score = Number(value);
+  return Number.isFinite(score) && score > 0 ? score : 0;
+}
+
+function normalizeEvaluation(row) {
+  return {
+    ...row,
+    evaluation_date: dateLikeToIso(row.submitted_at) || dateLikeToIso(row.service_date),
+    staff_name: String(row.staff_name || "").trim(),
+    main_category: String(row.main_category || "ไม่ระบุหมวดงาน").trim() || "ไม่ระบุหมวดงาน",
+    sub_category: String(row.sub_category || "ไม่ระบุประเภทย่อย").trim() || "ไม่ระบุประเภทย่อย",
+    work_title: String(row.work_title || "-").trim() || "-",
+    suggestion: String(row.suggestion || "").trim(),
+    overall_score: normalizeScore(row.overall_score),
+    speed_score: normalizeScore(row.speed_score),
+    communication_score: normalizeScore(row.communication_score),
+    technical_score: normalizeScore(row.technical_score),
+    clarity_score: normalizeScore(row.clarity_score),
+    outcome_score: normalizeScore(row.outcome_score),
+  };
+}
+
+async function fetchSatisfactionEvaluations() {
+  if (!GOOGLE_SCRIPT_URL) return [];
+  const token = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
+  const requestParams = isManagerView
+    ? {
+        action: "satisfaction_list",
+        token,
+      }
+    : {
+        action: "satisfaction_staff",
+        staff: selectedStaff,
+        token,
+      };
+  const data = await jsonpRequest(GOOGLE_SCRIPT_URL, requestParams);
+  if (!data.ok || !Array.isArray(data.evaluations)) {
+    throw new Error(data.error || "โหลดข้อมูลผลประเมินไม่สำเร็จ");
+  }
+  return data.evaluations.map(normalizeEvaluation);
+}
+
 function jsonpRequest(baseUrl, params = {}) {
   return new Promise((resolve, reject) => {
     const callbackName = `itSupportLogCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -258,6 +318,23 @@ function allLogs() {
 function staffLogs() {
   if (isManagerView) return allLogs();
   return allLogs().filter((log) => !selectedStaff || log.staff_name === selectedStaff);
+}
+
+function allEvaluations() {
+  return activeEvaluations || [];
+}
+
+function staffEvaluations() {
+  if (isManagerView) return allEvaluations();
+  return allEvaluations().filter((row) => !selectedStaff || row.staff_name === selectedStaff);
+}
+
+function filteredEvaluations() {
+  const from = elements.satisfactionDateFrom?.value || "0000-01-01";
+  const to = elements.satisfactionDateTo?.value || "9999-12-31";
+  return staffEvaluations()
+    .filter((row) => row.evaluation_date && row.evaluation_date >= from && row.evaluation_date <= to)
+    .sort((a, b) => String(b.submitted_at || b.evaluation_date).localeCompare(String(a.submitted_at || a.evaluation_date)));
 }
 
 function filteredLogs() {
@@ -352,6 +429,104 @@ function renderTable() {
   renderPagination(logs.length, pageStart + 1, pageStart + pageLogs.length);
 }
 
+function average(values) {
+  const valid = values.map(Number).filter((value) => Number.isFinite(value) && value > 0);
+  if (!valid.length) return 0;
+  return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+}
+
+function setDefaultSatisfactionDateRange() {
+  if (!elements.satisfactionDateFrom || !elements.satisfactionDateTo) return;
+  if (elements.satisfactionDateFrom.value && elements.satisfactionDateTo.value) return;
+  const dates = staffEvaluations().map((row) => row.evaluation_date).filter(Boolean).sort();
+  const end = dates.at(-1) || selectedDate || today();
+  const start = dates[0] || end;
+  elements.satisfactionDateFrom.value = start;
+  elements.satisfactionDateTo.value = end;
+}
+
+function renderSatisfactionScoreList(rows) {
+  if (!elements.satisfactionScoreList) return;
+  if (!rows.length) {
+    elements.satisfactionScoreList.innerHTML = '<div class="empty-state">ยังไม่มีผลประเมินในช่วงเวลานี้</div>';
+    return;
+  }
+
+  elements.satisfactionScoreList.innerHTML = SATISFACTION_SCORE_FIELDS.map((field) => {
+    const score = average(rows.map((row) => row[field.key]));
+    const width = Math.max(4, Math.round((score / 5) * 100));
+    return `
+      <article class="dashboard-bar-row satisfaction-score-row">
+        <div class="dashboard-bar-head">
+          <strong>${escapeHtml(field.label)}</strong>
+          <span>${score.toFixed(2)} / 5</span>
+        </div>
+        <div class="dashboard-bar-track">
+          <div class="dashboard-bar-fill score-fill" style="width:${width}%"></div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderSatisfactionSuggestions(rows) {
+  if (!elements.satisfactionSuggestionList) return;
+  const suggestions = rows.filter((row) => row.suggestion).slice(0, 10);
+  if (!suggestions.length) {
+    elements.satisfactionSuggestionList.innerHTML = '<div class="empty-state">ยังไม่มีข้อเสนอแนะในช่วงเวลานี้</div>';
+    return;
+  }
+
+  elements.satisfactionSuggestionList.innerHTML = suggestions.map((row) => `
+    <article class="recent-item">
+      <div class="recent-top">
+        <strong>${escapeHtml(row.work_title)}</strong>
+        <span>${row.overall_score ? row.overall_score.toFixed(2) : "-"} / 5</span>
+      </div>
+      <p>${escapeHtml(formatDisplayDate(row.evaluation_date))} · ${escapeHtml(row.main_category)}</p>
+      <p>${escapeHtml(row.suggestion)}</p>
+    </article>
+  `).join("");
+}
+
+function renderSatisfactionFollowRows(rows) {
+  if (!elements.satisfactionFollowRows) return;
+  const targets = rows.filter((row) => row.overall_score > 0 && row.overall_score <= 3);
+  if (!targets.length) {
+    elements.satisfactionFollowRows.innerHTML = '<tr><td colspan="5"><div class="empty-state">ไม่พบรายการคะแนนต่ำที่ต้องติดตาม</div></td></tr>';
+    return;
+  }
+
+  elements.satisfactionFollowRows.innerHTML = targets.map((row) => `
+    <tr>
+      <td>${escapeHtml(formatDisplayDate(row.evaluation_date))}</td>
+      <td><strong>${escapeHtml(row.work_title)}</strong><br><small>${escapeHtml(row.log_id || "")}</small></td>
+      <td>${escapeHtml(row.main_category)}<br><small>${escapeHtml(row.sub_category)}</small></td>
+      <td>${row.overall_score.toFixed(2)} / 5</td>
+      <td>${escapeHtml(row.suggestion || "-")}</td>
+    </tr>
+  `).join("");
+}
+
+function renderSatisfactionSummary() {
+  if (!elements.satisfactionSubtitle) return;
+  setDefaultSatisfactionDateRange();
+  const rows = filteredEvaluations();
+  const from = elements.satisfactionDateFrom?.value ? isoToThaiShortDate(elements.satisfactionDateFrom.value) : "-";
+  const to = elements.satisfactionDateTo?.value ? isoToThaiShortDate(elements.satisfactionDateTo.value) : "-";
+  const staffLabel = isManagerView ? "เจ้าหน้าที่ทุกคน" : selectedStaff || "ไม่ระบุเจ้าหน้าที่";
+  const overall = average(rows.map((row) => row.overall_score));
+  const lowCount = rows.filter((row) => row.overall_score > 0 && row.overall_score <= 3).length;
+
+  elements.satisfactionSubtitle.textContent = `${staffLabel} · ช่วงวันที่ ${from} ถึง ${to}`;
+  elements.satisfactionCount.textContent = rows.length;
+  elements.satisfactionOverall.textContent = overall.toFixed(2);
+  elements.satisfactionLowCount.textContent = lowCount;
+  renderSatisfactionScoreList(rows);
+  renderSatisfactionSuggestions(rows);
+  renderSatisfactionFollowRows(rows);
+}
+
 function renderPagination(totalItems, startItem, endItem) {
   if (!elements.paginationBar || !elements.paginationInfo || !elements.paginationTabs) return;
   if (!totalItems) {
@@ -393,6 +568,7 @@ function renderAttachments(log) {
 
 function renderAll() {
   renderSummary();
+  renderSatisfactionSummary();
   renderTable();
 }
 
@@ -418,6 +594,8 @@ elements.filterStatus.addEventListener("change", () => {
   currentPage = 1;
   renderTable();
 });
+if (elements.satisfactionDateFrom) elements.satisfactionDateFrom.addEventListener("change", renderSatisfactionSummary);
+if (elements.satisfactionDateTo) elements.satisfactionDateTo.addEventListener("change", renderSatisfactionSummary);
 elements.paginationTabs.addEventListener("click", (event) => {
   const button = event.target.closest("[data-page]");
   if (!button) return;
@@ -441,9 +619,15 @@ async function init() {
     return;
   }
   try {
-    activeLogs = await fetchSheetLogs();
+    const [logs, evaluations] = await Promise.all([
+      fetchSheetLogs(),
+      fetchSatisfactionEvaluations(),
+    ]);
+    activeLogs = logs;
+    activeEvaluations = evaluations;
   } catch (error) {
     activeLogs = [];
+    activeEvaluations = [];
     renderAll();
     elements.recentList.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div>`;
     elements.logRows.innerHTML = `<tr><td colspan="8"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
