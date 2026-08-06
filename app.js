@@ -311,7 +311,7 @@ function nowTime() {
 
 function normalizeTime(value) {
   if (!value) return "";
-  const match = String(value).match(/^(\d{1,2}):(\d{2})/);
+  const match = String(value).trim().match(/^(\d{2})[:.](\d{2})$/);
   if (!match) return "";
   const hour = Number(match[1]);
   const minute = Number(match[2]);
@@ -1050,11 +1050,11 @@ async function submitFormInner() {
   formatTimeInput(elements.startTime);
   formatTimeInput(elements.endTime);
   if (!normalizeTime(elements.startTime.value)) {
-    showToast("กรุณากรอกเวลาเริ่มเป็นรูปแบบ 24 ชั่วโมง เช่น 09:00");
+    showToast("กรุณากรอกเวลาเริ่มเป็นรูปแบบ 24 ชั่วโมง เช่น 09.00 หรือ 09:00");
     return;
   }
   if (elements.endTime.value && !normalizeTime(elements.endTime.value)) {
-    showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17:30");
+    showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17.30 หรือ 17:30");
     return;
   }
   const timeRangeError = validateTimeRange(elements.startTime.value, elements.endTime.value);
