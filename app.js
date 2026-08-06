@@ -324,6 +324,13 @@ function formatTimeInput(input) {
   updateDuration();
 }
 
+function timeToMinutes(time) {
+  const normalized = normalizeTime(time);
+  if (!normalized) return null;
+  const [hour, minute] = normalized.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
 function loadLogs() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -593,12 +600,20 @@ function renderOptions(select, values, placeholder) {
 
 function minutesBetween(start, end) {
   if (!start || !end) return null;
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  let startMinutes = sh * 60 + sm;
-  let endMinutes = eh * 60 + em;
-  if (endMinutes < startMinutes) endMinutes += 24 * 60;
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return null;
   return endMinutes - startMinutes;
+}
+
+function validateTimeRange(startTime, endTime) {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+  if (startMinutes === null || endMinutes === null) return "";
+  if (endMinutes <= startMinutes) {
+    return "กรุณาตรวจสอบเวลา: เวลาเสร็จต้องมากกว่าเวลาเริ่ม";
+  }
+  return "";
 }
 
 function durationLabel(minutes) {
@@ -1021,6 +1036,12 @@ async function submitFormInner() {
   }
   if (elements.endTime.value && !normalizeTime(elements.endTime.value)) {
     showToast("กรุณากรอกเวลาเสร็จเป็นรูปแบบ 24 ชั่วโมง เช่น 17:30");
+    return;
+  }
+  const timeRangeError = validateTimeRange(elements.startTime.value, elements.endTime.value);
+  if (timeRangeError) {
+    showToast(timeRangeError);
+    elements.endTime.focus();
     return;
   }
   const staffName = getSelectedStaffName();
