@@ -1306,6 +1306,17 @@ tr:last-child td {
   opacity: 1;
 }
 
+.field-error {
+  margin: -6px 0 6px;
+  border: 1px solid #efb8b8;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 @media (max-width: 1080px) {
   .layout-grid,
   .summary-page-grid,

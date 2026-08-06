@@ -101,6 +101,7 @@ const elements = {
   staff: document.querySelector("#staff"),
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
+  timeRangeError: document.querySelector("#timeRangeError"),
   duration: document.querySelector("#duration"),
   mainCategory: document.querySelector("#mainCategory"),
   subCategory: document.querySelector("#subCategory"),
@@ -616,6 +617,18 @@ function validateTimeRange(startTime, endTime) {
   return "";
 }
 
+function setTimeRangeError(message = "") {
+  if (!elements.timeRangeError) return;
+  elements.timeRangeError.textContent = message;
+  elements.timeRangeError.hidden = !message;
+  elements.endTime.toggleAttribute("aria-invalid", Boolean(message));
+  if (message) {
+    elements.endTime.setAttribute("aria-describedby", "timeRangeError");
+  } else if (elements.endTime.getAttribute("aria-describedby") === "timeRangeError") {
+    elements.endTime.removeAttribute("aria-describedby");
+  }
+}
+
 function durationLabel(minutes) {
   if (minutes === null || Number.isNaN(minutes)) return "-";
   const h = Math.floor(minutes / 60);
@@ -626,7 +639,11 @@ function durationLabel(minutes) {
 }
 
 function updateDuration() {
-  const minutes = minutesBetween(normalizeTime(elements.startTime.value), normalizeTime(elements.endTime.value));
+  const startTime = normalizeTime(elements.startTime.value);
+  const endTime = normalizeTime(elements.endTime.value);
+  const timeRangeError = validateTimeRange(startTime, endTime);
+  setTimeRangeError(timeRangeError);
+  const minutes = minutesBetween(startTime, endTime);
   elements.duration.value = durationLabel(minutes);
 }
 
@@ -877,6 +894,7 @@ function resetForm(keepDate = true) {
   elements.mainCategory.selectedIndex = 0;
   updateSubCategories();
   elements.duration.value = "-";
+  setTimeRangeError();
   elements.detailCount.textContent = "0";
   editId = null;
   pendingSourceLogId = "";
@@ -993,6 +1011,7 @@ function fillForm(log) {
   elements.detailCount.textContent = String(elements.workDetail.value.length);
   updateThaiDatePreview();
   updateDuration();
+  setTimeRangeError();
   elements.formMode.textContent = `แก้ไข ${log.log_id}`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1040,8 +1059,12 @@ async function submitFormInner() {
   }
   const timeRangeError = validateTimeRange(elements.startTime.value, elements.endTime.value);
   if (timeRangeError) {
+    setTimeRangeError(timeRangeError);
     showToast(timeRangeError);
-    elements.endTime.focus();
+    if (elements.timeRangeError) {
+      elements.timeRangeError.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    elements.endTime.focus({ preventScroll: true });
     return;
   }
   const staffName = getSelectedStaffName();

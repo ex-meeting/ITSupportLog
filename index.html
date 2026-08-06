@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>บันทึกการทำงานรายวัน | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260721-01" />
+    <link rel="stylesheet" href="./styles.css?v=20260806-02" />
   </head>
   <body>
     <div class="app-shell">
@@ -69,6 +69,7 @@
                 เวลาเสร็จ
                 <input id="endTime" name="endTime" type="text" inputmode="numeric" placeholder="HH:mm เช่น 17:30" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" required />
               </label>
+              <p class="field-error full-field" id="timeRangeError" hidden></p>
             </div>
 
             <div class="field-grid two">
@@ -158,6 +159,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260806-01"></script>
+    <script src="./app.js?v=20260806-02"></script>
   </body>
 </html>
