@@ -357,7 +357,7 @@ function getAppBasePath() {
 }
 
 function makeSatisfactionUrl(logId) {
-  return `${getAppBasePath()}satisfaction.html?v=20260721-04&log_id=${encodeURIComponent(logId)}`;
+  return `${getAppBasePath()}satisfaction.html?v=20260807-01&log_id=${encodeURIComponent(logId)}`;
 }
 
 function makeQrCodeUrl(targetUrl) {
