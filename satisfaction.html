@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ประเมินความพึงพอใจ | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260721-04" />
+    <link rel="stylesheet" href="./styles.css?v=20260809-01" />
   </head>
   <body>
     <div class="app-shell">
@@ -37,11 +37,11 @@
             <div class="field-grid two">
               <label>
                 ชื่อ-สกุล
-                <input id="recipientName" name="recipientName" type="text" maxlength="120" />
+                <input id="recipientName" name="recipientName" type="hidden" value="" />
               </label>
               <label>
                 หน่วยงาน
-                <input id="department" name="department" type="text" maxlength="160" />
+                <input id="department" name="department" type="hidden" value="" />
               </label>
             </div>
 
@@ -58,7 +58,7 @@
               </label>
               <label>
                 อีเมลหรือเบอร์ติดต่อ
-                <input id="contact" name="contact" type="text" maxlength="160" placeholder="ระบุเมื่อสะดวกให้ติดต่อกลับ" />
+                <input id="contact" name="contact" type="hidden" value="" />
               </label>
             </div>
 
@@ -173,6 +173,6 @@
       </div>
     </div>
 
-    <script src="./satisfaction.js?v=20260721-02"></script>
+    <script src="./satisfaction.js?v=20260809-01"></script>
   </body>
 </html>

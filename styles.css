@@ -61,6 +61,10 @@ svg {
   stroke-width: 2;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .app-shell {
   min-height: 100vh;
 }

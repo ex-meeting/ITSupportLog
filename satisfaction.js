@@ -104,6 +104,7 @@ let linkedLogReady = false;
 let pendingPayload = null;
 
 function init() {
+  hidePersonalInfoFields();
   renderRatingItems();
   elements.logId.value = linkedLogId;
   setSubmitLocked(true);
@@ -121,6 +122,19 @@ function init() {
     window.setTimeout(() => {
       loadLinkedLog();
     }, 0);
+  });
+}
+
+function hidePersonalInfoFields() {
+  [elements.recipientName, elements.department, elements.contact].forEach((field) => {
+    if (!field) return;
+    field.value = "";
+    const label = field.closest("label");
+    if (label) {
+      label.hidden = true;
+    } else {
+      field.hidden = true;
+    }
   });
 }
 
@@ -289,10 +303,10 @@ function collectPayload() {
     response_id: makeResponseId(),
     log_id: linkedLogId,
     submitted_at: new Date().toISOString(),
-    recipient_name: elements.recipientName.value.trim(),
-    department: elements.department.value.trim(),
+    recipient_name: elements.recipientName?.value.trim() || "",
+    department: elements.department?.value.trim() || "",
     recipient_type: elements.recipientType.value,
-    contact: elements.contact.value.trim(),
+    contact: elements.contact?.value.trim() || "",
     service_date: elements.serviceDate.value,
     end_time: elements.endTime.value,
     staff_name: elements.staffName.value,
