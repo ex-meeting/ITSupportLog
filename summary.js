@@ -34,6 +34,7 @@ const elements = {
 };
 
 const PAGE_SIZE = 10;
+const JSONP_TIMEOUT_MS = 60000;
 const CONTINUING_STATUSES = ["ต่อเนื่องในครั้งถัดไป"];
 const LEGACY_CONTINUING_STATUSES = ["ระหว่างดำเนินการ", "ต่อเนื่องวันถัดไป"];
 const SATISFACTION_SCORE_FIELDS = [
@@ -293,7 +294,7 @@ function jsonpRequest(baseUrl, params = {}) {
     const timeout = window.setTimeout(() => {
       cleanup();
       reject(new Error("โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ"));
-    }, 15000);
+    }, JSONP_TIMEOUT_MS);
 
     function cleanup() {
       window.clearTimeout(timeout);
@@ -689,12 +690,7 @@ async function init() {
     return;
   }
   try {
-    const [logs, evaluations] = await Promise.all([
-      fetchSheetLogs(),
-      fetchSatisfactionEvaluations(),
-    ]);
-    activeLogs = logs;
-    activeEvaluations = evaluations;
+    activeLogs = await fetchSheetLogs();
   } catch (error) {
     activeLogs = [];
     activeEvaluations = [];
@@ -702,6 +698,14 @@ async function init() {
     elements.recentList.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div>`;
     elements.logRows.innerHTML = `<tr><td colspan="8"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
     return;
+  }
+  try {
+    activeEvaluations = await fetchSatisfactionEvaluations();
+  } catch (error) {
+    activeEvaluations = [];
+    if (elements.satisfactionSuggestionList) {
+      elements.satisfactionSuggestionList.innerHTML = `<div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลผลประเมินไม่สำเร็จ")}</div>`;
+    }
   }
   setDefaultLogDateRange();
   renderStaffFilterOptions();
