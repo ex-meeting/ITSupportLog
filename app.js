@@ -881,7 +881,7 @@ async function openSummaryPage() {
       date,
     }),
   );
-  const url = `summary.html?v=20260725-01&staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(accessToken)}`;
+  const url = `summary.html?v=20260826-01&staff=${encodeURIComponent(staffName)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(accessToken)}`;
   window.location.href = url;
 }
 

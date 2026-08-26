@@ -12,6 +12,7 @@ const elements = {
   recentList: document.querySelector("#recentList"),
   logRows: document.querySelector("#logRows"),
   searchText: document.querySelector("#searchText"),
+  filterCategory: document.querySelector("#filterCategory"),
   filterStatus: document.querySelector("#filterStatus"),
   tableSubtitle: document.querySelector("#tableSubtitle"),
   paginationBar: document.querySelector("#paginationBar"),
@@ -339,9 +340,11 @@ function filteredEvaluations() {
 
 function filteredLogs() {
   const text = elements.searchText.value.trim().toLowerCase();
+  const category = elements.filterCategory?.value || "";
   const status = elements.filterStatus.value;
 
   return staffLogs()
+    .filter((log) => !category || log.main_category === category)
     .filter((log) => !status || log.status === status)
     .filter((log) => {
       if (!text) return true;
@@ -427,6 +430,21 @@ function renderTable() {
     )
     .join("");
   renderPagination(logs.length, pageStart + 1, pageStart + pageLogs.length);
+}
+
+function renderCategoryFilterOptions() {
+  if (!elements.filterCategory) return;
+  const selectedValue = elements.filterCategory.value;
+  const categories = [...new Set(staffLogs().map((log) => String(log.main_category || "").trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "th"),
+  );
+  elements.filterCategory.innerHTML = [
+    '<option value="">ทุกหมวดงาน</option>',
+    ...categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`),
+  ].join("");
+  if (categories.includes(selectedValue)) {
+    elements.filterCategory.value = selectedValue;
+  }
 }
 
 function average(values) {
@@ -590,6 +608,12 @@ elements.searchText.addEventListener("input", () => {
   currentPage = 1;
   renderTable();
 });
+if (elements.filterCategory) {
+  elements.filterCategory.addEventListener("change", () => {
+    currentPage = 1;
+    renderTable();
+  });
+}
 elements.filterStatus.addEventListener("change", () => {
   currentPage = 1;
   renderTable();
@@ -633,6 +657,7 @@ async function init() {
     elements.logRows.innerHTML = `<tr><td colspan="8"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
     return;
   }
+  renderCategoryFilterOptions();
   renderAll();
 }
 
