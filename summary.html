@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>สรุปรายการทั้งหมด | IT Support</title>
-    <link rel="stylesheet" href="./styles.css?v=20260725-01" />
+    <link rel="stylesheet" href="./styles.css?v=20260826-02" />
   </head>
   <body>
     <div class="app-shell">
@@ -146,7 +146,18 @@
               <h2>รายการบันทึกทั้งหมด</h2>
               <p id="tableSubtitle">-</p>
             </div>
-            <div class="filters">
+            <div class="filters log-table-filters">
+              <label>
+                วันที่เริ่มต้น
+                <input id="logDateFrom" type="date" />
+              </label>
+              <label>
+                วันที่สิ้นสุด
+                <input id="logDateTo" type="date" />
+              </label>
+              <select id="filterStaff">
+                <option value="">ทุกเจ้าหน้าที่</option>
+              </select>
               <input id="searchText" type="search" placeholder="ค้นหาหัวข้องาน/รายละเอียด/หมวดงาน" />
               <select id="filterCategory">
                 <option value="">ทุกหมวดงาน</option>
@@ -196,6 +207,6 @@
       </main>
     </div>
 
-    <script src="./summary.js?v=20260826-01"></script>
+    <script src="./summary.js?v=20260826-02"></script>
   </body>
 </html>

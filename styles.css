@@ -1104,6 +1104,29 @@ input[readonly] {
   width: 190px;
 }
 
+#log-table .panel-heading {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.log-table-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  width: 100%;
+}
+
+.log-table-filters label {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-table-filters input,
+.log-table-filters select {
+  width: 100%;
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--border);

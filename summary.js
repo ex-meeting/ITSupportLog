@@ -11,6 +11,9 @@ const elements = {
   countFailed: document.querySelector("#countFailed"),
   recentList: document.querySelector("#recentList"),
   logRows: document.querySelector("#logRows"),
+  logDateFrom: document.querySelector("#logDateFrom"),
+  logDateTo: document.querySelector("#logDateTo"),
+  filterStaff: document.querySelector("#filterStaff"),
   searchText: document.querySelector("#searchText"),
   filterCategory: document.querySelector("#filterCategory"),
   filterStatus: document.querySelector("#filterStatus"),
@@ -321,6 +324,10 @@ function staffLogs() {
   return allLogs().filter((log) => !selectedStaff || log.staff_name === selectedStaff);
 }
 
+function logFilterBaseLogs() {
+  return staffLogs();
+}
+
 function allEvaluations() {
   return activeEvaluations || [];
 }
@@ -340,10 +347,18 @@ function filteredEvaluations() {
 
 function filteredLogs() {
   const text = elements.searchText.value.trim().toLowerCase();
+  const from = elements.logDateFrom?.value || "0000-01-01";
+  const to = elements.logDateTo?.value || "9999-12-31";
+  const staff = elements.filterStaff?.value || "";
   const category = elements.filterCategory?.value || "";
   const status = elements.filterStatus.value;
 
-  return staffLogs()
+  return logFilterBaseLogs()
+    .filter((log) => {
+      const date = getLogIsoDate(log);
+      return date && date >= from && date <= to;
+    })
+    .filter((log) => !staff || log.staff_name === staff)
     .filter((log) => !category || log.main_category === category)
     .filter((log) => !status || log.status === status)
     .filter((log) => {
@@ -401,11 +416,10 @@ function renderTable() {
   currentPage = Math.min(Math.max(currentPage, 1), totalPages);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageLogs = logs.slice(pageStart, pageStart + PAGE_SIZE);
-  elements.tableSubtitle.textContent = isManagerView
-    ? "แสดงรายการของเจ้าหน้าที่ทุกคนจาก Google Sheet"
-    : selectedStaff
-    ? `แสดงเฉพาะรายการของ ${selectedStaff}`
-    : "ไม่ได้ระบุเจ้าหน้าที่";
+  const fromLabel = elements.logDateFrom?.value ? isoToThaiShortDate(elements.logDateFrom.value) : "วันแรก";
+  const toLabel = elements.logDateTo?.value ? isoToThaiShortDate(elements.logDateTo.value) : "วันล่าสุด";
+  const staffLabel = elements.filterStaff?.value || (isManagerView ? "เจ้าหน้าที่ทุกคน" : selectedStaff || "ไม่ระบุเจ้าหน้าที่");
+  elements.tableSubtitle.textContent = `${staffLabel} · ช่วงวันที่ ${fromLabel} ถึง ${toLabel}`;
 
   if (!logs.length) {
     elements.logRows.innerHTML = '<tr><td colspan="8"><div class="empty-state">ไม่พบรายการตามเงื่อนไข</div></td></tr>';
@@ -445,6 +459,38 @@ function renderCategoryFilterOptions() {
   if (categories.includes(selectedValue)) {
     elements.filterCategory.value = selectedValue;
   }
+}
+
+function renderStaffFilterOptions() {
+  if (!elements.filterStaff) return;
+  const selectedValue = elements.filterStaff.value;
+  const staffNames = [...new Set(logFilterBaseLogs().map((log) => String(log.staff_name || "").trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "th"),
+  );
+  const allOption = isManagerView ? '<option value="">ทุกเจ้าหน้าที่</option>' : "";
+  elements.filterStaff.innerHTML = [
+    allOption,
+    ...staffNames.map((staffName) => `<option value="${escapeHtml(staffName)}">${escapeHtml(staffName)}</option>`),
+  ].join("");
+  if (staffNames.includes(selectedValue) || (isManagerView && !selectedValue)) {
+    elements.filterStaff.value = selectedValue;
+  } else if (!isManagerView && staffNames.length) {
+    elements.filterStaff.value = staffNames[0];
+  }
+}
+
+function setDefaultLogDateRange() {
+  if (!elements.logDateFrom || !elements.logDateTo) return;
+  if (elements.logDateFrom.value && elements.logDateTo.value) return;
+  const dates = logFilterBaseLogs().map(getLogIsoDate).filter(Boolean).sort();
+  if (!dates.length) return;
+  elements.logDateFrom.value = dates[0];
+  elements.logDateTo.value = dates.at(-1);
+}
+
+function rerenderLogTableFromFilter() {
+  currentPage = 1;
+  renderTable();
 }
 
 function average(values) {
@@ -605,18 +651,18 @@ function updateBackLink() {
 }
 
 elements.searchText.addEventListener("input", () => {
-  currentPage = 1;
-  renderTable();
+  rerenderLogTableFromFilter();
 });
+if (elements.logDateFrom) elements.logDateFrom.addEventListener("change", rerenderLogTableFromFilter);
+if (elements.logDateTo) elements.logDateTo.addEventListener("change", rerenderLogTableFromFilter);
+if (elements.filterStaff) elements.filterStaff.addEventListener("change", rerenderLogTableFromFilter);
 if (elements.filterCategory) {
   elements.filterCategory.addEventListener("change", () => {
-    currentPage = 1;
-    renderTable();
+    rerenderLogTableFromFilter();
   });
 }
 elements.filterStatus.addEventListener("change", () => {
-  currentPage = 1;
-  renderTable();
+  rerenderLogTableFromFilter();
 });
 if (elements.satisfactionDateFrom) elements.satisfactionDateFrom.addEventListener("change", renderSatisfactionSummary);
 if (elements.satisfactionDateTo) elements.satisfactionDateTo.addEventListener("change", renderSatisfactionSummary);
@@ -657,6 +703,8 @@ async function init() {
     elements.logRows.innerHTML = `<tr><td colspan="8"><div class="empty-state">${escapeHtml(error.message || "โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ")}</div></td></tr>`;
     return;
   }
+  setDefaultLogDateRange();
+  renderStaffFilterOptions();
   renderCategoryFilterOptions();
   renderAll();
 }
