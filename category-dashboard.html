@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard หมวดงานและประเภทย่อย | IT Support</title>
+    <link rel="stylesheet" href="./styles.css?v=20260831-01" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="main dashboard-main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand">
+              <div class="brand-mark">IT</div>
+              <div>
+                <strong>IT Support Log</strong>
+                <span>Dashboard ความสัมพันธ์หมวดงาน</span>
+              </div>
+            </div>
+            <div>
+              <p class="section-label">ฝ่ายสนับสนุนเทคโนโลยีสารสนเทศ</p>
+              <h1>Dashboard หมวดงานหลักและประเภทงานย่อย</h1>
+            </div>
+          </div>
+        </header>
+
+        <section class="panel dashboard-filter-panel">
+          <div class="panel-heading compact">
+            <div>
+              <h2>ตัวกรองข้อมูล</h2>
+              <p id="dashboardSubtitle">กำลังโหลดข้อมูล...</p>
+            </div>
+            <button class="ghost-button" id="refreshDashboard" type="button">โหลดข้อมูลใหม่</button>
+          </div>
+          <div class="dashboard-filters relationship-filters">
+            <label>
+              วันที่เริ่มต้น
+              <input id="dateFrom" type="date" />
+            </label>
+            <label>
+              วันที่สิ้นสุด
+              <input id="dateTo" type="date" />
+            </label>
+            <label>
+              เจ้าหน้าที่
+              <select id="staffFilter">
+                <option value="">เจ้าหน้าที่ทุกคน</option>
+              </select>
+            </label>
+            <label>
+              หมวดงานหลัก
+              <select id="categoryFilter">
+                <option value="">ทุกหมวดงานหลัก</option>
+              </select>
+            </label>
+            <label>
+              ประเภทงานย่อย
+              <select id="subCategoryFilter">
+                <option value="">ทุกประเภทงานย่อย</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="dashboard-metrics relationship-metrics" aria-label="ภาพรวมความสัมพันธ์หมวดงาน">
+          <article class="metric status-card">
+            <span>รายการทั้งหมด</span>
+            <strong id="metricTotal">0</strong>
+            <small id="metricDuration">0 นาที</small>
+          </article>
+          <article class="metric success status-card">
+            <span>หมวดงานหลัก</span>
+            <strong id="metricCategories">0</strong>
+            <small>หมวด</small>
+          </article>
+          <article class="metric warning status-card">
+            <span>ประเภทงานย่อย</span>
+            <strong id="metricSubCategories">0</strong>
+            <small>ประเภท</small>
+          </article>
+          <article class="metric danger status-card">
+            <span>คู่ความสัมพันธ์</span>
+            <strong id="metricPairs">0</strong>
+            <small>หมวดงานหลัก + ประเภทงานย่อย</small>
+          </article>
+        </section>
+
+        <section class="dashboard-grid relationship-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>หมวดงานหลักประกอบด้วยประเภทงานย่อยอะไรบ้าง</h2>
+                <p>เรียงตามจำนวนรายการในช่วงเวลาที่เลือก</p>
+              </div>
+            </div>
+            <div class="relationship-tree" id="categoryTree"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>ประเภทงานย่อยอยู่ภายใต้หมวดงานหลักอะไรบ้าง</h2>
+                <p>ใช้ตรวจสอบการจัดหมวดหมู่งานซ้ำหรือคลาดเคลื่อน</p>
+              </div>
+            </div>
+            <div class="relationship-tree" id="subCategoryTree"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-grid relationship-grid">
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>กราฟสรุปตามหมวดงานหลัก</h2>
+                <p>จำนวนรายการและระยะเวลารวม</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="categoryBars"></div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-heading compact">
+              <div>
+                <h2>กราฟสรุปตามประเภทงานย่อย</h2>
+                <p>แสดงประเภทงานย่อยที่พบมากที่สุด</p>
+              </div>
+            </div>
+            <div class="dashboard-list" id="subCategoryBars"></div>
+          </section>
+        </section>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>ตารางความสัมพันธ์หมวดงานหลักและประเภทงานย่อย</h2>
+              <p>ใช้ตรวจสอบคู่หมวดงานที่เกิดขึ้นจริงจากข้อมูลบันทึกการทำงาน</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="summary-table relationship-table">
+              <thead>
+                <tr>
+                  <th>หมวดงานหลัก</th>
+                  <th>ประเภทงานย่อย</th>
+                  <th>รายการ</th>
+                  <th>เวลารวม</th>
+                  <th>เจ้าหน้าที่ที่เกี่ยวข้อง</th>
+                  <th>งานล่าสุด</th>
+                </tr>
+              </thead>
+              <tbody id="relationshipRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./category-dashboard.js?v=20260831-01"></script>
+  </body>
+</html>
