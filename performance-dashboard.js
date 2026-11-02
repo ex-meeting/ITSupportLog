@@ -121,6 +121,14 @@ function normalizeScore(value) {
   return Number.isFinite(score) && score > 0 ? score : 0;
 }
 
+function hasAnyDimensionScore(row) {
+  return QUALITY_FIELDS.some((field) => normalizeScore(row[field]) > 0);
+}
+
+function hasAnyQualityScore(row) {
+  return normalizeScore(row.overall_score) > 0 || hasAnyDimensionScore(row);
+}
+
 function durationLabel(minutes) {
   const total = Math.max(0, Math.round(Number(minutes) || 0));
   const h = Math.floor(total / 60);
@@ -304,6 +312,14 @@ function staffNamesForRows(logs, evaluations) {
 function scoreStaff(staffName, logs, evaluations, maxima) {
   const staffLogs = logs.filter((log) => log.staff_name === staffName);
   const staffEvaluations = evaluations.filter((row) => row.staff_name === staffName);
+  const scoredEvaluations = staffEvaluations.filter(hasAnyQualityScore);
+  const overallScores = staffEvaluations
+    .map((row) => normalizeScore(row.overall_score))
+    .filter((score) => score > 0);
+  const dimensionEvaluations = staffEvaluations.filter(hasAnyDimensionScore);
+  const dimensionAverages = QUALITY_FIELDS
+    .map((field) => average(staffEvaluations.map((row) => row[field])))
+    .filter((score) => score > 0);
   const logCount = staffLogs.length;
   const totalMinutes = staffLogs.reduce((sum, log) => sum + log.duration_minutes, 0);
   const weightedWork = staffLogs.reduce((sum, log) => sum + log.weighted_work, 0);
@@ -318,14 +334,21 @@ function scoreStaff(staffName, logs, evaluations, maxima) {
   const durationScore = maxima.weightedMinutes ? (weightedMinutes / maxima.weightedMinutes) * 10 : 0;
   const quantityScore = clamp(workloadScore + complexityScore + completionScore + durationScore, 0, 70);
 
-  const overallAverage = average(staffEvaluations.map((row) => row.overall_score));
-  const dimensionAverage = average(staffEvaluations.flatMap((row) => QUALITY_FIELDS.map((field) => row[field])));
-  const lowScoreCount = staffEvaluations.filter((row) => row.overall_score > 0 && row.overall_score <= 3).length;
-  const lowRate = staffEvaluations.length ? lowScoreCount / staffEvaluations.length : 1;
-  const riskScore = staffEvaluations.length ? 5 * (1 - lowRate) : 0;
-  const qualityConfidence = Math.min(1, staffEvaluations.length / MIN_EVALUATIONS_FOR_FULL_CONFIDENCE);
+  const overallAverage = average(overallScores);
+  const dimensionAverage = average(dimensionAverages);
+  const overallResponseCount = overallScores.length;
+  const dimensionResponseCount = dimensionEvaluations.length;
+  const lowScoreCount = overallScores.filter((score) => score <= 3).length;
+  const lowRate = overallResponseCount ? lowScoreCount / overallResponseCount : 0;
+  const riskScore = overallResponseCount ? 5 * (1 - lowRate) : 0;
+  const overallConfidence = Math.min(1, overallResponseCount / MIN_EVALUATIONS_FOR_FULL_CONFIDENCE);
+  const dimensionConfidence = Math.min(1, dimensionResponseCount / MIN_EVALUATIONS_FOR_FULL_CONFIDENCE);
+  const qualityConfidence = ((overallConfidence * 20) + (dimensionConfidence * 10)) / 30;
+  const overallComponentScore = (overallAverage / 5) * 15 * overallConfidence;
+  const dimensionComponentScore = (dimensionAverage / 5) * 10 * dimensionConfidence;
+  const riskComponentScore = riskScore * overallConfidence;
   const rawQualityScore = (overallAverage / 5) * 15 + (dimensionAverage / 5) * 10 + riskScore;
-  const qualityScore = clamp(rawQualityScore * qualityConfidence, 0, 30);
+  const qualityScore = clamp(overallComponentScore + dimensionComponentScore + riskComponentScore, 0, 30);
   const totalScore = quantityScore + qualityScore;
 
   return {
@@ -342,12 +365,20 @@ function scoreStaff(staffName, logs, evaluations, maxima) {
     completionScore: clamp(completionScore, 0, 15),
     durationScore: clamp(durationScore, 0, 10),
     quantityScore,
-    evaluationCount: staffEvaluations.length,
+    evaluationCount: scoredEvaluations.length,
+    submittedEvaluationCount: staffEvaluations.length,
+    overallResponseCount,
+    dimensionResponseCount,
     overallAverage,
     dimensionAverage,
     lowScoreCount,
     riskScore,
+    overallConfidence,
+    dimensionConfidence,
     qualityConfidence,
+    overallComponentScore,
+    dimensionComponentScore,
+    riskComponentScore,
     rawQualityScore,
     qualityScore,
     totalScore,
@@ -374,9 +405,9 @@ function calculateStaffScores(logs, evaluations) {
 }
 
 function confidenceLabel(score) {
-  if (score.evaluationCount >= MIN_EVALUATIONS_FOR_FULL_CONFIDENCE) return "เพียงพอ";
-  if (score.evaluationCount > 0) return `ยังน้อย (${Math.round(score.qualityConfidence * 100)}%)`;
-  return "ไม่มีแบบประเมิน";
+  if (!score.evaluationCount) return score.submittedEvaluationCount ? "ไม่มีคะแนน" : "ไม่มีแบบประเมิน";
+  if (score.overallConfidence >= 1 && score.dimensionConfidence >= 1) return "เพียงพอ";
+  return `รวม ${score.overallResponseCount}/5 · ด้าน ${score.dimensionResponseCount}/5`;
 }
 
 function renderMetrics(scores, logs, evaluations) {
@@ -385,14 +416,15 @@ function renderMetrics(scores, logs, evaluations) {
   const avgQuality = averageAll(scores.map((score) => score.qualityScore));
   const totalMinutes = logs.reduce((sum, log) => sum + log.duration_minutes, 0);
   const avgConfidence = scores.length ? scores.reduce((sum, score) => sum + score.qualityConfidence, 0) / scores.length : 0;
+  const scoredEvaluationCount = evaluations.filter(hasAnyQualityScore).length;
 
   elements.metricTotalScore.textContent = avgTotal.toFixed(2);
   elements.metricQuantityScore.textContent = avgQuantity.toFixed(2);
   elements.metricQualityScore.textContent = avgQuality.toFixed(2);
   elements.metricLogs.textContent = logs.length;
   elements.metricMinutes.textContent = durationLabel(totalMinutes);
-  elements.metricEvaluations.textContent = evaluations.length;
-  elements.metricConfidence.textContent = `ความเชื่อมั่น ${Math.round(avgConfidence * 100)}%`;
+  elements.metricEvaluations.textContent = `${scoredEvaluationCount}/${evaluations.length}`;
+  elements.metricConfidence.textContent = `มีคะแนน/ทั้งหมด · ความเชื่อมั่น ${Math.round(avgConfidence * 100)}%`;
 }
 
 function renderStaffRows(scores) {
@@ -410,9 +442,9 @@ function renderStaffRows(scores) {
       <td>${score.logCount}</td>
       <td>${durationLabel(score.totalMinutes)}</td>
       <td>${score.successCount}</td>
-      <td>${score.evaluationCount}</td>
+      <td>${score.evaluationCount}/${score.submittedEvaluationCount}</td>
       <td>${score.overallAverage ? score.overallAverage.toFixed(2) : "-"}</td>
-      <td><span class="score-chip ${score.evaluationCount >= MIN_EVALUATIONS_FOR_FULL_CONFIDENCE ? "good" : "warn"}">${escapeHtml(confidenceLabel(score))}</span></td>
+      <td><span class="score-chip ${score.overallConfidence >= 1 && score.dimensionConfidence >= 1 ? "good" : "warn"}">${escapeHtml(confidenceLabel(score))}</span></td>
     </tr>
   `).join("");
 }
@@ -433,9 +465,9 @@ function renderComponentList(container, scores, type) {
           ["ระยะเวลา", score.durationScore, 10],
         ]
       : [
-          ["คะแนนรวม", (score.overallAverage / 5) * 15 * score.qualityConfidence, 15],
-          ["คะแนนรายด้าน", (score.dimensionAverage / 5) * 10 * score.qualityConfidence, 10],
-          ["ความเสี่ยง", score.riskScore * score.qualityConfidence, 5],
+          ["คะแนนรวม", score.overallComponentScore, 15],
+          ["คะแนนรายด้าน", score.dimensionComponentScore, 10],
+          ["ความเสี่ยง", score.riskComponentScore, 5],
         ];
     const total = type === "quantity" ? score.quantityScore : score.qualityScore;
     const max = type === "quantity" ? 70 : 30;
@@ -464,13 +496,15 @@ function renderCategoryList(logs, evaluations) {
   const rows = categories.map((category) => {
     const categoryLogs = logs.filter((row) => row.main_category === category);
     const categoryEvaluations = evaluations.filter((row) => row.main_category === category);
+    const scoredCategoryEvaluations = categoryEvaluations.filter(hasAnyQualityScore);
     const minutes = categoryLogs.reduce((sum, row) => sum + row.duration_minutes, 0);
     const avgQuality = average(categoryEvaluations.map((row) => row.overall_score));
     return {
       category,
       count: categoryLogs.length,
       minutes,
-      evaluations: categoryEvaluations.length,
+      evaluations: scoredCategoryEvaluations.length,
+      submittedEvaluations: categoryEvaluations.length,
       avgQuality,
     };
   }).sort((a, b) => b.minutes - a.minutes || b.evaluations - a.evaluations).slice(0, 12);
@@ -491,7 +525,7 @@ function renderCategoryList(logs, evaluations) {
         <div class="dashboard-bar-fill" style="width:${Math.max(4, percent(row.minutes, maxMinutes))}%"></div>
       </div>
       <div class="dashboard-status-line">
-        <span>แบบประเมิน ${row.evaluations}</span>
+        <span>แบบมีคะแนน ${row.evaluations}/${row.submittedEvaluations}</span>
         <span>คะแนนเฉลี่ย ${row.avgQuality ? row.avgQuality.toFixed(2) : "-"}</span>
       </div>
     </article>
@@ -511,7 +545,8 @@ function renderFollowUps(scores) {
   elements.followUpRows.innerHTML = rows.map((score) => {
     const issues = [];
     if (score.totalScore < 60) issues.push("คะแนนรวมต่ำกว่า 60");
-    if (score.qualityConfidence < 1) issues.push("แบบประเมินยังไม่ถึง 5 รายการ");
+    if (score.overallResponseCount < MIN_EVALUATIONS_FOR_FULL_CONFIDENCE) issues.push(`คะแนนรวม ${score.overallResponseCount}/5`);
+    if (score.dimensionResponseCount < MIN_EVALUATIONS_FOR_FULL_CONFIDENCE) issues.push(`คะแนนรายด้าน ${score.dimensionResponseCount}/5`);
     if (score.lowScoreCount > 0) issues.push(`มีคะแนนต่ำ ${score.lowScoreCount} รายการ`);
     return `
       <tr>
@@ -530,7 +565,8 @@ function renderDashboard() {
   const from = elements.dateFrom.value ? isoToThaiShortDate(elements.dateFrom.value) : "-";
   const to = elements.dateTo.value ? isoToThaiShortDate(elements.dateTo.value) : "-";
 
-  elements.performanceSubtitle.textContent = `ช่วงวันที่ ${from} ถึง ${to} · ${logs.length} รายการงาน · ${evaluations.length} แบบประเมิน`;
+  const scoredEvaluationCount = evaluations.filter(hasAnyQualityScore).length;
+  elements.performanceSubtitle.textContent = `ช่วงวันที่ ${from} ถึง ${to} · ${logs.length} รายการงาน · ${scoredEvaluationCount}/${evaluations.length} แบบประเมินมีคะแนน`;
   renderMetrics(scores, logs, evaluations);
   renderStaffRows(scores);
   renderComponentList(elements.quantityList, scores, "quantity");
