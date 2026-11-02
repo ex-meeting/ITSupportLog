@@ -157,7 +157,7 @@ function renderRatingItems() {
   elements.ratingSection.innerHTML = ratingItems.map((item) => {
     const scores = [1, 2, 3, 4, 5].map((score) => `
       <label class="rating-option">
-        <input type="radio" name="${item.key}" value="${score}" required />
+        <input type="radio" name="${item.key}" value="${score}" />
         <span>${score}</span>
       </label>
     `).join("");
