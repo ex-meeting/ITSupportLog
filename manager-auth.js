@@ -30,10 +30,7 @@
       sessionStorage.removeItem(STORAGE_KEY);
       window.location.reload();
     });
-    if (!heading) {
-      document.body.append(button);
-      return;
-    }
+    if (!heading) return;
 
     let actions = heading.querySelector(".manager-auth-actions");
     if (!actions) {
