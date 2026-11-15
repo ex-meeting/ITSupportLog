@@ -48,7 +48,7 @@ const SATISFACTION_SCORE_FIELDS = [
 const params = new URLSearchParams(window.location.search);
 const selectedStaff = params.get("staff") || "";
 const selectedDate = params.get("date") || today();
-const selectedToken = params.get("token") || "";
+let selectedToken = params.get("token") || "";
 const selectedScope = params.get("scope") || "";
 const isManagerView = selectedScope === "all";
 const summaryAuth = loadSummaryAuth();
@@ -676,13 +676,10 @@ elements.paginationTabs.addEventListener("click", (event) => {
 
 async function init() {
   updateBackLink();
-  const accessToken = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
-  if (isManagerView && !selectedToken) {
-    activeLogs = [];
-    renderAll();
-    elements.recentList.innerHTML = '<div class="empty-state">กรุณาเปิดหน้าสรุปจากลิงก์สำหรับผู้บริหาร</div>';
-    return;
+  if (isManagerView) {
+    selectedToken = await window.ManagerAuth.getToken();
   }
+  const accessToken = selectedToken || (summaryAuth.staff === selectedStaff ? summaryAuth.token : "");
   if (!isManagerView && (!selectedStaff || !accessToken)) {
     activeLogs = [];
     renderAll();
@@ -692,6 +689,10 @@ async function init() {
   try {
     activeLogs = await fetchSheetLogs();
   } catch (error) {
+    if (isManagerView && window.ManagerAuth.isAuthError(error)) {
+      selectedToken = await window.ManagerAuth.reset("รหัสผู้บริหารไม่ถูกต้อง กรุณาลองใหม่");
+      return init();
+    }
     activeLogs = [];
     activeEvaluations = [];
     renderAll();
