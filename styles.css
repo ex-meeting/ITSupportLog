@@ -65,6 +65,42 @@ svg {
   display: none !important;
 }
 
+.manager-auth-backdrop {
+  z-index: 1000;
+}
+
+.manager-auth-modal {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.manager-auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.manager-auth-form label {
+  margin: 0;
+}
+
+.manager-auth-form .primary-button {
+  width: 100%;
+}
+
+.manager-auth-error {
+  margin: 0;
+}
+
+.manager-auth-change {
+  white-space: nowrap;
+}
+
+.manager-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -1455,6 +1491,15 @@ tr:last-child td {
 
   .panel-heading {
     display: grid;
+  }
+
+  .manager-auth-actions {
+    display: grid;
+    width: 100%;
+  }
+
+  .manager-auth-actions .ghost-button {
+    width: 100%;
   }
 
   .field-grid.two,

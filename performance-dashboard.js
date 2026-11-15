@@ -1,5 +1,4 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I6aa2RVXcn4McRGKojBsZRvNx40N5qyIZP3aJrwYUriYtZNtSXGKEPTEA/exec";
-const MANAGER_TOKEN = "MANAGER_TOKEN_20260706_B7N5Q2";
 
 const STAFF_NAMES = ["นายมนตรี กิ่งแก้ว", "จสอ.ธนบดี ข่ายม่าน", "นายสมพงษ์ แสนชา"];
 const STATUS_WEIGHTS = {
@@ -37,8 +36,7 @@ const elements = {
   followUpRows: document.querySelector("#followUpRows"),
 };
 
-const params = new URLSearchParams(window.location.search);
-const selectedToken = params.get("token") || MANAGER_TOKEN;
+let selectedToken = "";
 let allLogs = [];
 let allEvaluations = [];
 
@@ -578,6 +576,7 @@ function renderDashboard() {
 async function loadDashboard() {
   elements.refreshPerformance.disabled = true;
   elements.performanceSubtitle.textContent = "กำลังโหลดข้อมูลจาก Google Sheet...";
+  let retryWithNewToken = false;
   try {
     const data = await fetchData();
     allLogs = data.logs;
@@ -586,14 +585,20 @@ async function loadDashboard() {
     if (!elements.dateFrom.value || !elements.dateTo.value) setDefaultDateRange(allLogs, allEvaluations);
     renderDashboard();
   } catch (error) {
-    allLogs = [];
-    allEvaluations = [];
-    populateCategoryFilter([], []);
-    elements.performanceSubtitle.textContent = error.message || "โหลดข้อมูลไม่สำเร็จ";
-    renderDashboard();
+    if (window.ManagerAuth.isAuthError(error)) {
+      selectedToken = await window.ManagerAuth.reset("รหัสผู้บริหารไม่ถูกต้อง กรุณาลองใหม่");
+      retryWithNewToken = true;
+    } else {
+      allLogs = [];
+      allEvaluations = [];
+      populateCategoryFilter([], []);
+      elements.performanceSubtitle.textContent = error.message || "โหลดข้อมูลไม่สำเร็จ";
+      renderDashboard();
+    }
   } finally {
     elements.refreshPerformance.disabled = false;
   }
+  if (retryWithNewToken) return loadDashboard();
 }
 
 elements.dateFrom.addEventListener("change", renderDashboard);
@@ -602,4 +607,9 @@ elements.staffFilter.addEventListener("change", renderDashboard);
 elements.categoryFilter.addEventListener("change", renderDashboard);
 elements.refreshPerformance.addEventListener("click", loadDashboard);
 
-loadDashboard();
+async function startDashboard() {
+  selectedToken = await window.ManagerAuth.getToken();
+  await loadDashboard();
+}
+
+startDashboard();

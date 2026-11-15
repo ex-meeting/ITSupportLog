@@ -1,5 +1,4 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHp434IfxY6I6aa2RVXcn4McRGKojBsZRvNx40N5qyIZP3aJrwYUriYtZNtSXGKEPTEA/exec";
-const MANAGER_TOKEN = "MANAGER_TOKEN_20260706_B7N5Q2";
 const JSONP_TIMEOUT_MS = 60000;
 
 const elements = {
@@ -22,8 +21,7 @@ const elements = {
   relationshipRows: document.querySelector("#relationshipRows"),
 };
 
-const params = new URLSearchParams(window.location.search);
-const selectedToken = params.get("token") || MANAGER_TOKEN;
+let selectedToken = "";
 let allLogs = [];
 
 function today() {
@@ -453,19 +451,26 @@ function handleFilterChange(event) {
 async function loadDashboard() {
   elements.refreshDashboard.disabled = true;
   elements.dashboardSubtitle.textContent = "กำลังโหลดข้อมูลจาก Google Sheet...";
+  let retryWithNewToken = false;
   try {
     allLogs = await fetchLogs();
     if (!elements.dateFrom.value || !elements.dateTo.value) setDefaultDateRange(allLogs);
     updateFilterOptions();
     renderDashboard();
   } catch (error) {
-    allLogs = [];
-    elements.dashboardSubtitle.textContent = error.message || "โหลดข้อมูลไม่สำเร็จ";
-    updateFilterOptions();
-    renderDashboard();
+    if (window.ManagerAuth.isAuthError(error)) {
+      selectedToken = await window.ManagerAuth.reset("รหัสผู้บริหารไม่ถูกต้อง กรุณาลองใหม่");
+      retryWithNewToken = true;
+    } else {
+      allLogs = [];
+      elements.dashboardSubtitle.textContent = error.message || "โหลดข้อมูลไม่สำเร็จ";
+      updateFilterOptions();
+      renderDashboard();
+    }
   } finally {
     elements.refreshDashboard.disabled = false;
   }
+  if (retryWithNewToken) return loadDashboard();
 }
 
 elements.dateFrom.addEventListener("change", handleFilterChange);
@@ -488,4 +493,9 @@ elements.subCategoryTree.addEventListener("click", (event) => {
   renderDashboard();
 });
 
-loadDashboard();
+async function startDashboard() {
+  selectedToken = await window.ManagerAuth.getToken();
+  await loadDashboard();
+}
+
+startDashboard();
