@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "it-support-manager-token";
+  const PERSISTENT_STORAGE_KEY = "it-support-manager-token-persistent";
   let pendingRequest = null;
 
   function cleanLegacyTokenFromUrl() {
@@ -15,7 +16,9 @@
   }
 
   function storedToken() {
-    return String(sessionStorage.getItem(STORAGE_KEY) || "").trim();
+    return String(
+      sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(PERSISTENT_STORAGE_KEY) || "",
+    ).trim();
   }
 
   function mountChangeButton() {
@@ -28,6 +31,7 @@
     button.textContent = "เปลี่ยนรหัสผู้บริหาร";
     button.addEventListener("click", () => {
       sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(PERSISTENT_STORAGE_KEY);
       window.location.reload();
     });
     if (!heading) return;
@@ -54,12 +58,16 @@
           <div class="modal-head">
             <p class="section-label">พื้นที่สำหรับผู้บริหาร</p>
             <h2 id="managerAuthTitle">เข้าสู่ Dashboard</h2>
-            <p>กรอกรหัสผู้บริหารเพื่อโหลดข้อมูล รายการนี้จะเก็บเฉพาะในแท็บปัจจุบัน</p>
+            <p>กรอกรหัสผู้บริหารเพื่อโหลดข้อมูล สามารถจดจำรหัสได้บนอุปกรณ์ส่วนตัว</p>
           </div>
           <form id="managerAuthForm" class="manager-auth-form">
             <label>
               รหัสผู้บริหาร
               <input id="managerAuthToken" type="password" autocomplete="off" spellcheck="false" required />
+            </label>
+            <label class="manager-auth-remember">
+              <input id="managerAuthRemember" type="checkbox" />
+              <span>จดจำรหัสในอุปกรณ์นี้</span>
             </label>
             <p class="form-error manager-auth-error" id="managerAuthError" ${message ? "" : "hidden"}>${escapeHtml(message)}</p>
             <button class="primary-button" type="submit">เข้าสู่ Dashboard</button>
@@ -70,11 +78,17 @@
 
       const form = backdrop.querySelector("#managerAuthForm");
       const input = backdrop.querySelector("#managerAuthToken");
+      const remember = backdrop.querySelector("#managerAuthRemember");
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         const token = input.value.trim();
         if (!token) return;
         sessionStorage.setItem(STORAGE_KEY, token);
+        if (remember.checked) {
+          localStorage.setItem(PERSISTENT_STORAGE_KEY, token);
+        } else {
+          localStorage.removeItem(PERSISTENT_STORAGE_KEY);
+        }
         backdrop.remove();
         pendingRequest = null;
         mountChangeButton();
@@ -106,6 +120,7 @@
 
   async function reset(message) {
     sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PERSISTENT_STORAGE_KEY);
     document.querySelector("#managerAuthChange")?.remove();
     return requestToken(message || "รหัสผู้บริหารไม่ถูกต้อง กรุณาลองใหม่");
   }
